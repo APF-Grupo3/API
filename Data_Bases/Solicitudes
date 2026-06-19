@@ -1,0 +1,67 @@
+# Creación de base de datos de solicitudes
+class Transaction(db.Model):
+    """Modelo de transacción financiera
+    
+    Atributos clave:
+        customer_id: FK a Customer (relación)
+        monto: Cantidad numérica (10 dígitos, 2 decimales)
+        moneda: Código ISO 4217 (USD, EUR, etc.)
+        tipo: payment, refund, transfer
+        estado: pending, completed, failed, cancelled
+        referencia_externa: ID de sistema externo (Stripe, PayPal)
+        metadata: JSON para datos adicionales flexibles
+    """
+    __tablename__ = 'transactions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
+    
+    # Campos financieros
+    monto = db.Column(db.Numeric(10, 2), nullable=False)
+    moneda = db.Column(db.String(3), default='USD')
+    
+    # Campos de estado
+    tipo = db.Column(db.String(20), nullable=False)
+    estado = db.Column(db.String(20), default='pending')
+    
+    # Información adicional
+    descripcion = db.Column(db.String(255))
+    referencia_externa = db.Column(db.String(100))
+    
+    # Fechas
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_completado = db.Column(db.DateTime)
+    
+    # Metadata flexible (JSON)
+    metadata = db.Column(db.JSON)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relación con auditoría
+    audit_logs = db.relationship('AuditLog', backref='transaction', lazy=True)
+    
+    def to_dict(self):
+        """Serialización a JSON
+        
+        Incluye datos relacionados del cliente para evitar
+        múltiples queries (optimización N+1)
+        """
+        return {
+            'id': self.id,
+            'customer_id': self.customer_id,
+            'customer_email': self.customer.email if self.customer else None,
+            'customer_nombre': self.customer.nombre if self.customer else None,
+            'monto': float(self.monto),
+            'moneda': self.moneda,
+            'tipo': self.tipo,
+            'estado': self.estado,
+            'descripcion': self.descripcion,
+            'referencia_externa': self.referencia_externa,
+            'fecha': self.fecha.isoformat() if self.fecha else None,
+            'fecha_completado': self.fecha_completado.isoformat() if self.fecha_completado else None,
+            'metadata': self.metadata,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+print("✓ Modelo Transaction definido correctamente")
