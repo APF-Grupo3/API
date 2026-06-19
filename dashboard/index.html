@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FundCompare Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/dashboard/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">FundCompare</p>
+          <h1>Comparador automatizado de fondos y ETFs</h1>
+          <p class="hero-copy">
+            Yahoo Finance · Metricas cuantitativas · Alertas
+          </p>
+        </div>
+        <button id="telegramButton" class="telegram-button" type="button">
+          <span class="telegram-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path
+                d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"
+              />
+            </svg>
+          </span>
+          Enviar resumen por Telegram
+        </button>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-label">Estado API</span>
+          <strong id="apiStatus" class="stat-value">Cargando...</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Proveedor de datos</span>
+          <strong id="dataProvider" class="stat-value">-</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Ultima consulta</span>
+          <strong id="lastQuery" class="stat-value">-</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Nº activos comparados</span>
+          <strong id="assetCount" class="stat-value">0</strong>
+        </article>
+      </section>
+
+      <main class="dashboard-grid">
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <div>
+              <h2>Comparativa</h2>
+              <p>Consulta varios ETFs o fondos con metricas sencillas y claras.</p>
+            </div>
+          </div>
+
+          <form id="compareForm" class="compare-form">
+            <label>
+              <span>Tickers</span>
+              <input
+                id="tickersInput"
+                name="tickers"
+                type="text"
+                value="SPY, QQQ, IWM"
+                placeholder="SPY, QQQ, IWM"
+              />
+            </label>
+
+            <label>
+              <span>Periodo</span>
+              <select id="periodInput" name="periodo">
+                <option value="1mo">1 mes</option>
+                <option value="3mo">3 meses</option>
+                <option value="6mo">6 meses</option>
+                <option value="1y" selected>1 año</option>
+                <option value="2y">2 años</option>
+                <option value="5y">5 años</option>
+              </select>
+            </label>
+
+            <button class="primary-button" type="submit">Comparar activos</button>
+          </form>
+
+          <p id="feedbackMessage" class="feedback" aria-live="polite"></p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Precio cierre</th>
+                  <th>Rentabilidad acumulada</th>
+                  <th>Volatilidad anual</th>
+                  <th>Sharpe</th>
+                  <th>Sortino</th>
+                  <th>Max Drawdown</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Ranking</h2>
+              <p>Orden rapido por Sharpe y rentabilidad.</p>
+            </div>
+          </div>
+          <div class="ranking-columns">
+            <div>
+              <h3>Sharpe</h3>
+              <ol id="rankingSharpe" class="ranking-list"></ol>
+            </div>
+            <div>
+              <h3>Rentabilidad</h3>
+              <ol id="rankingReturn" class="ranking-list"></ol>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Alertas</h2>
+              <p>Guardadas temporalmente en memoria.</p>
+            </div>
+          </div>
+          <form id="alertForm" class="alert-form">
+            <input id="alertTicker" type="text" placeholder="Ticker" required />
+            <select id="alertMetric" required>
+              <option value="rentabilidad_acumulada">Rentabilidad</option>
+              <option value="volatilidad_anual">Volatilidad</option>
+              <option value="sharpe_ratio">Sharpe</option>
+              <option value="sortino_ratio">Sortino</option>
+              <option value="max_drawdown">Max Drawdown</option>
+            </select>
+            <select id="alertCondition" required>
+              <option value=">">></option>
+              <option value="<"><</option>
+            </select>
+            <input
+              id="alertThreshold"
+              type="number"
+              step="0.01"
+              placeholder="Umbral"
+              required
+            />
+            <button class="secondary-button" type="submit">Crear alerta</button>
+          </form>
+          <ul id="alertsList" class="alerts-list"></ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Rentabilidad acumulada</h2>
+              <p>Comparativa visual por activo.</p>
+            </div>
+          </div>
+          <canvas id="returnsChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Sharpe Ratio</h2>
+              <p>Ranking visual de eficiencia riesgo-retorno.</p>
+            </div>
+          </div>
+          <canvas id="sharpeChart"></canvas>
+        </section>
+      </main>
+    </div>
+
+    <script src="/dashboard/app.js"></script>
+  </body>
+</html>
