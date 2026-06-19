@@ -1,3 +1,15 @@
+## Demo funcional actual
+
+Este repositorio incluye una demo simplificada en Flask para el trabajo de master.
+
+- Arranque: `python api/app.py`
+- Dashboard: `http://localhost:5000/dashboard`
+- Dependencias: `pip install -r requirements.txt`
+- La carpeta `database/` no se usa en esta demo.
+- Las alertas se guardan solo en memoria.
+
+Nota: el contenido historico del README que aparece debajo puede describir una arquitectura mas amplia prevista para fases posteriores. Para probar la demo actual, usa las instrucciones de esta seccion.
+
 # API
 desarrollo de una API financiera
 
