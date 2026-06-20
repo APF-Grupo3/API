@@ -25,6 +25,11 @@ import yfinance as yf
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
 
+# --- NUEVO: base de datos y autenticación ---
+from configuracion import config
+from models import db
+from auth import auth_bp
+
 APP_NAME = "FundCompare API"
 APP_VERSION = "1.0.0"
 DATA_PROVIDER = "Yahoo Finance"
@@ -58,6 +63,16 @@ yf.set_tz_cache_location(str(CACHE_DIR))
 
 app = Flask(__name__)
 CORS(app)
+
+# --- NUEVO: configuración y base de datos ---
+entorno = os.environ.get("FLASK_ENV", "development")
+app.config.from_object(config[entorno])
+
+db.init_app(app)
+app.register_blueprint(auth_bp)
+
+with app.app_context():
+    db.create_all()  # Crea las tablas si no existen (no borra datos existentes)
 
 alerts_memory: list[dict] = []
 next_alert_id = 1
@@ -661,6 +676,12 @@ def root() -> object:
 @app.route("/dashboard")
 def dashboard_index() -> object:
     return send_from_directory(DASHBOARD_DIR, "index.html")
+
+
+# --- NUEVO: ruta directa a la pantalla de login/registro ---
+@app.route("/dashboard/auth")
+def dashboard_auth() -> object:
+    return send_from_directory(DASHBOARD_DIR, "auth.html")
 
 
 @app.route("/dashboard/<path:filename>")
