@@ -26,7 +26,7 @@ from flask_cors import CORS
 
 # --- base de datos y autenticación ---
 from configuracion import config
-from models import Cliente, TelegramToken, db
+from models import Alerta, Cliente, TelegramToken, db
 from auth import auth_bp
 
 
@@ -75,8 +75,7 @@ app.register_blueprint(auth_bp)
 with app.app_context():
     db.create_all()  # Crea las tablas si no existen (no borra datos existentes)
 
-alerts_memory: list[dict] = []
-next_alert_id = 1
+# Las alertas se guardan en la tabla 'alertas' de la BD, asociadas al usuario
 
 # ---------------------------------------------------------------------------
 # Telegram helpers
@@ -785,17 +784,24 @@ def rankings() -> object:
 
 @app.route("/api/v1/alertas", methods=["GET"])
 def list_alerts() -> object:
+    cliente_id = session.get("cliente_id")
+    if not cliente_id:
+        return jsonify({"error": "No autenticado"}), 401
+
+    alertas = Alerta.query.filter_by(cliente_id=cliente_id).order_by(Alerta.creada_en.desc()).all()
     return jsonify(
         {
-            "total": len(alerts_memory),
-            "alertas": alerts_memory,
+            "total": len(alertas),
+            "alertas": [a.to_dict() for a in alertas],
         }
     )
 
 
 @app.route("/api/v1/alertas", methods=["POST"])
 def create_alert() -> object:
-    global next_alert_id
+    cliente_id = session.get("cliente_id")
+    if not cliente_id:
+        return jsonify({"error": "No autenticado"}), 401
 
     payload = request.get_json(silent=True) or {}
 
@@ -829,29 +835,32 @@ def create_alert() -> object:
     if not np.isfinite(threshold):
         return jsonify({"error": "El umbral debe ser numerico"}), 400
 
-    alert = {
-        "id": next_alert_id,
-        "ticker": str(payload["ticker"]).upper(),
-        "metrica": metric_name,
-        "condicion": str(payload["condicion"]),
-        "umbral": threshold,
-        "creada_en": utc_now_iso(),
-    }
+    alerta = Alerta(
+        cliente_id=cliente_id,
+        ticker=str(payload["ticker"]).upper(),
+        metrica=metric_name,
+        condicion=str(payload["condicion"]),
+        umbral=threshold,
+    )
+    db.session.add(alerta)
+    db.session.commit()
 
-    alerts_memory.append(alert)
-    next_alert_id += 1
-
-    return jsonify({"status": "created", "alerta": alert}), 201
+    return jsonify({"status": "created", "alerta": alerta.to_dict()}), 201
 
 
 @app.route("/api/v1/alertas/<int:alert_id>", methods=["DELETE"])
 def delete_alert(alert_id: int) -> object:
-    for index, alert in enumerate(alerts_memory):
-        if alert["id"] == alert_id:
-            deleted = alerts_memory.pop(index)
-            return jsonify({"status": "deleted", "alerta": deleted})
+    cliente_id = session.get("cliente_id")
+    if not cliente_id:
+        return jsonify({"error": "No autenticado"}), 401
 
-    return jsonify({"error": "Alerta no encontrada"}), 404
+    alerta = Alerta.query.filter_by(id=alert_id, cliente_id=cliente_id).first()
+    if not alerta:
+        return jsonify({"error": "Alerta no encontrada"}), 404
+
+    db.session.delete(alerta)
+    db.session.commit()
+    return jsonify({"status": "deleted", "alerta": alerta.to_dict()})
 
 
 @app.route("/api/v1/telegram/estado")
@@ -1383,6 +1392,65 @@ def _load_etf_catalog() -> None:
             ("AOK", "iShares Core Conservative Alloc"),
             ("VBIAX", "Vanguard Balanced Index"),
         ],
+        "Acciones populares US": [
+            ("AAPL", "Apple Inc."),
+            ("MSFT", "Microsoft Corp."),
+            ("GOOGL", "Alphabet Inc. (Google)"),
+            ("AMZN", "Amazon.com Inc."),
+            ("NVDA", "NVIDIA Corp."),
+            ("META", "Meta Platforms (Facebook)"),
+            ("TSLA", "Tesla Inc."),
+            ("BRK-B", "Berkshire Hathaway B"),
+            ("JPM", "JPMorgan Chase & Co."),
+            ("V", "Visa Inc."),
+            ("JNJ", "Johnson & Johnson"),
+            ("UNH", "UnitedHealth Group"),
+            ("MA", "Mastercard Inc."),
+            ("PG", "Procter & Gamble"),
+            ("HD", "The Home Depot"),
+            ("XOM", "Exxon Mobil Corp."),
+            ("AVGO", "Broadcom Inc."),
+            ("LLY", "Eli Lilly & Co."),
+            ("COST", "Costco Wholesale"),
+            ("ABBV", "AbbVie Inc."),
+            ("KO", "Coca-Cola Co."),
+            ("PEP", "PepsiCo Inc."),
+            ("MRK", "Merck & Co."),
+            ("CRM", "Salesforce Inc."),
+            ("AMD", "Advanced Micro Devices"),
+            ("NFLX", "Netflix Inc."),
+            ("ADBE", "Adobe Inc."),
+            ("DIS", "Walt Disney Co."),
+            ("INTC", "Intel Corp."),
+            ("CSCO", "Cisco Systems"),
+            ("WMT", "Walmart Inc."),
+            ("BAC", "Bank of America"),
+            ("PFE", "Pfizer Inc."),
+            ("TMO", "Thermo Fisher Scientific"),
+            ("ORCL", "Oracle Corp."),
+            ("NKE", "Nike Inc."),
+            ("T", "AT&T Inc."),
+            ("VZ", "Verizon Communications"),
+            ("PYPL", "PayPal Holdings"),
+            ("UBER", "Uber Technologies"),
+        ],
+        "Acciones populares Europa": [
+            ("ASML", "ASML Holding NV"),
+            ("SAP", "SAP SE"),
+            ("NVO", "Novo Nordisk A/S"),
+            ("SHEL", "Shell PLC"),
+            ("TTE", "TotalEnergies SE"),
+            ("AZN", "AstraZeneca PLC"),
+            ("SNY", "Sanofi SA"),
+            ("DEO", "Diageo PLC"),
+            ("UL", "Unilever PLC"),
+            ("EQNR", "Equinor ASA"),
+            ("SAN", "Banco Santander"),
+            ("BBVA", "Banco Bilbao Vizcaya"),
+            ("TEF", "Telefónica SA"),
+            ("IBE", "Iberdrola SA"),
+            ("ITX", "Inditex SA"),
+        ],
     }
 
     for categoria, etfs in etfs_por_categoria.items():
@@ -1410,7 +1478,7 @@ def etf_catalog() -> object:
 
     q = (request.args.get("q") or "").strip().upper()
     categoria = request.args.get("categoria", "").strip()
-    limit = min(int(request.args.get("limit", 50)), 200)
+    limit = min(int(request.args.get("limit", 300)), 500)
 
     results = _etf_catalog
 
@@ -1453,7 +1521,7 @@ def set_etfs_favoritos() -> object:
     """Guarda los ETFs favoritos del usuario logueado.
 
     Body JSON:
-        etfs (list[str]): lista de tickers. Máx 30.
+        etfs (list[str]): lista de tickers. Máx 50.
     """
     cliente_id = session.get("cliente_id")
     if not cliente_id:
@@ -1471,7 +1539,7 @@ def set_etfs_favoritos() -> object:
 
     # Sanitizar: solo alfanuméricos y punto, max 10 chars cada uno
     clean = []
-    for t in etfs[:30]:
+    for t in etfs[:50]:
         ticker = str(t).strip().upper()
         if ticker and len(ticker) <= 10:
             clean.append(ticker)

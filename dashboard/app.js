@@ -54,6 +54,10 @@ const elements = {
   profilePhone: document.getElementById("profilePhone"),
   profileTelegram: document.getElementById("profileTelegram"),
   logoutButton: document.getElementById("logoutButton"),
+  etfSearchInput: document.getElementById("etfSearchInput"),
+  etfDropdown: document.getElementById("etfDropdown"),
+  etfSelectedTags: document.getElementById("etfSelectedTags"),
+  saveFavoritesBtn: document.getElementById("saveFavoritesBtn"),
 };
 
 function setFeedback(message, tone = "default") {
@@ -314,7 +318,7 @@ async function loadComparison() {
 
 async function loadAlerts() {
   try {
-    const response = await fetch("/api/v1/alertas");
+    const response = await fetch("/api/v1/alertas", { credentials: "include" });
     const data = await response.json();
 
     if (!data.alertas.length) {
@@ -356,6 +360,7 @@ async function createAlert(event) {
   try {
     const response = await fetch("/api/v1/alertas", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -375,7 +380,7 @@ async function createAlert(event) {
 
 async function deleteAlert(alertId) {
   try {
-    const response = await fetch(`/api/v1/alertas/${alertId}`, { method: "DELETE" });
+    const response = await fetch(`/api/v1/alertas/${alertId}`, { method: "DELETE", credentials: "include" });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "No se pudo eliminar la alerta");
@@ -550,6 +555,194 @@ async function refreshClienteData() {
 
 elements.telegramLinkButton.addEventListener("click", linkTelegram);
 
+// ── ETF Multi-Select ──
+let etfCatalog = [];
+let selectedTickers = [];
+let searchTimeout = null;
+
+async function loadEtfCatalog() {
+  try {
+    const response = await fetch("/api/v1/etfs/catalogo?limit=500");
+    const data = await response.json();
+    etfCatalog = data.etfs || [];
+  } catch {
+    etfCatalog = [];
+  }
+}
+
+async function loadFavorites() {
+  if (!state.cliente) return;
+  // Usar los favoritos que ya vienen en el objeto cliente
+  const favs = state.cliente.etfs_favoritos || [];
+  if (favs.length > 0) {
+    selectedTickers = [...favs];
+  } else {
+    selectedTickers = ["SPY", "QQQ", "IWM"];
+  }
+  syncTickersInput();
+  renderTags();
+}
+
+function syncTickersInput() {
+  elements.tickersInput.value = selectedTickers.join(", ");
+}
+
+function renderTags() {
+  const count = selectedTickers.length;
+  elements.etfSelectedTags.innerHTML =
+    selectedTickers
+      .map(
+        (t) =>
+          `<span class="etf-tag">${t}<button class="etf-tag-remove" type="button" data-ticker="${t}">&times;</button></span>`
+      )
+      .join("") +
+    `<span class="etf-tag-count">${count} activo${count !== 1 ? "s" : ""}</span>`;
+}
+
+function renderDropdown(query) {
+  const q = query.toUpperCase();
+  let filtered = etfCatalog;
+
+  if (q) {
+    filtered = etfCatalog.filter(
+      (e) => e.ticker.includes(q) || e.nombre.toUpperCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    elements.etfDropdown.innerHTML =
+      '<div class="etf-dropdown-empty">No se encontraron ETFs</div>';
+    elements.etfDropdown.hidden = false;
+    return;
+  }
+
+  // Agrupar por categoría
+  const grouped = {};
+  for (const etf of filtered) {
+    if (!grouped[etf.categoria]) grouped[etf.categoria] = [];
+    grouped[etf.categoria].push(etf);
+  }
+
+  let html = "";
+  for (const [cat, etfs] of Object.entries(grouped)) {
+    html += `<div class="etf-dropdown-category">${cat}</div>`;
+    for (const etf of etfs) {
+      const isSelected = selectedTickers.includes(etf.ticker);
+      html += `
+        <div class="etf-dropdown-item ${isSelected ? "selected" : ""}" data-ticker="${etf.ticker}">
+          <span class="etf-dropdown-ticker">${etf.ticker}</span>
+          <span class="etf-dropdown-name">${etf.nombre}</span>
+          <span class="etf-dropdown-check">${isSelected ? "✓" : ""}</span>
+        </div>`;
+    }
+  }
+
+  elements.etfDropdown.innerHTML = html;
+  elements.etfDropdown.hidden = false;
+}
+
+function updateDropdownItem(ticker, selected) {
+  const item = elements.etfDropdown.querySelector(`[data-ticker="${ticker}"]`);
+  if (!item) return;
+  if (selected) {
+    item.classList.add("selected");
+    const check = item.querySelector(".etf-dropdown-check");
+    if (check) check.textContent = "✓";
+  } else {
+    item.classList.remove("selected");
+    const check = item.querySelector(".etf-dropdown-check");
+    if (check) check.textContent = "";
+  }
+}
+
+function addTicker(ticker) {
+  if (selectedTickers.includes(ticker)) return;
+  if (selectedTickers.length >= 50) {
+    setFeedback("Máximo 50 activos permitidos.", "warning");
+    return;
+  }
+  selectedTickers.push(ticker);
+  syncTickersInput();
+  renderTags();
+  updateDropdownItem(ticker, true);
+}
+
+function removeTicker(ticker) {
+  const idx = selectedTickers.indexOf(ticker);
+  if (idx < 0) return;
+  selectedTickers.splice(idx, 1);
+  syncTickersInput();
+  renderTags();
+  updateDropdownItem(ticker, false);
+}
+
+elements.etfSearchInput.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    renderDropdown(elements.etfSearchInput.value.trim());
+  }, 150);
+});
+
+elements.etfSearchInput.addEventListener("focus", () => {
+  renderDropdown(elements.etfSearchInput.value.trim());
+});
+
+// Evitar que Enter en el buscador envíe el formulario
+elements.etfSearchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") e.preventDefault();
+});
+
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("etfSelectWrapper").contains(e.target)) {
+    elements.etfDropdown.hidden = true;
+  }
+});
+
+elements.etfDropdown.addEventListener("mousedown", (e) => {
+  // mousedown en vez de click: se dispara ANTES de cualquier reflow
+  e.preventDefault(); // evita que el input pierda el foco
+  e.stopPropagation();
+  const item = e.target.closest("[data-ticker]");
+  if (!item) return;
+  const ticker = item.dataset.ticker;
+  if (selectedTickers.includes(ticker)) {
+    removeTicker(ticker);
+  } else {
+    addTicker(ticker);
+  }
+});
+
+elements.etfSelectedTags.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const btn = e.target.closest(".etf-tag-remove");
+  if (btn) {
+    removeTicker(btn.dataset.ticker);
+  }
+});
+
+async function saveFavorites() {
+  if (!state.cliente) return;
+  try {
+    const response = await fetch("/api/v1/cliente/etfs-favoritos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ etfs: selectedTickers }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      state.cliente.etfs_favoritos = selectedTickers;
+      saveSession(state.cliente);
+      setFeedback(data.mensaje, "success");
+    } else {
+      setFeedback(data.error || "No se pudieron guardar los favoritos", "error");
+    }
+  } catch {
+    setFeedback("Error al guardar favoritos.", "error");
+  }
+}
+
+elements.saveFavoritesBtn.addEventListener("click", saveFavorites);
+
 elements.compareForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await loadComparison();
@@ -568,7 +761,11 @@ elements.alertsList.addEventListener("click", async (event) => {
 elements.telegramButton.addEventListener("click", sendTelegramSummary);
 
 // ── Init ──
-renderProfile();
-fetchHealth();
-loadComparison();
-loadAlerts();
+(async () => {
+  await loadEtfCatalog();
+  await renderProfile();
+  await loadFavorites();
+  fetchHealth();
+  loadComparison();
+  loadAlerts();
+})();

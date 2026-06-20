@@ -202,25 +202,25 @@ Clases CSS añadidas:
 
 ## 5. Archivos modificados (resumen)
 
-| Archivo                  | Tipo de cambio                                                  |
-|--------------------------|-----------------------------------------------------------------|
-| `api/models.py`          | Campos Telegram en Cliente + modelo TelegramToken               |
-| `api/app.py`             | 8 endpoints de Telegram + helpers + proxy cleanup               |
-| `api/auth.py`            | Sin cambios funcionales (ya tenía login/registro/sesión/logout)  |
-| `api/configuracion.py`   | `SQLALCHEMY_TRACK_MODIFICATIONS = False`                        |
-| `requirements.txt`       | Dependencias actualizadas                                       |
-| `dashboard/index.html`   | Hero con perfil, botones condicionales Telegram, modal          |
-| `dashboard/style.css`    | Estilos para perfil, modal, botones condicionales               |
-| `dashboard/app.js`       | Sesión, perfil, vinculación Telegram, logout                    |
-| `dashboard/auth.js`      | Guarda cliente en sessionStorage tras login                     |
-| `docs/n8n/*.json`        | Workflows de vinculación y resumen diario                       |
+| Archivo                  | Tipo de cambio                                                          |
+|--------------------------|-------------------------------------------------------------------------|
+| `api/models.py`          | Campos Telegram + TelegramToken + etfs_favoritos + modelo Alerta        |
+| `api/app.py`             | 8 endpoints Telegram + catálogo ETFs + favoritos + alertas en BD        |
+| `api/auth.py`            | Sin cambios funcionales (ya tenía login/registro/sesión/logout)          |
+| `api/configuracion.py`   | `SQLALCHEMY_TRACK_MODIFICATIONS = False`                                |
+| `requirements.txt`       | Dependencias actualizadas                                               |
+| `dashboard/index.html`   | Hero con perfil, botones Telegram, modal, selector ETFs, alertas        |
+| `dashboard/style.css`    | Estilos perfil, modal, selector multi-selección, dropdown, tags         |
+| `dashboard/app.js`       | Sesión, perfil, Telegram, selector ETFs, favoritos, alertas con sesión  |
+| `dashboard/auth.js`      | Guarda cliente en sessionStorage tras login                             |
+| `docs/n8n/*.json`        | Workflows de vinculación y resumen diario                               |
 
 ---
 
 ## 6. Base de datos
 
 - SQLite: `instance/app.db`
-- Tablas: `clientes`, `telegram_tokens`
+- Tablas: `clientes`, `telegram_tokens`, `alertas`
 - Usuario registrado: `lorenamartinezperea84@gmail.com` (ID 1)
 - Las tablas se crean automáticamente al arrancar Flask (`db.create_all()`)
 
@@ -257,3 +257,104 @@ Se separó la lógica en dos funciones:
 - Si la sesión del servidor ha caducado → redirige automáticamente a `/dashboard/auth`
 - Si la red falla → usa datos locales de `sessionStorage` como fallback
 - Al cerrar el modal de vinculación → `refreshClienteData()` vuelve a consultar la BD y actualiza los botones
+
+---
+
+## 8. ETFs favoritos (guardados en base de datos)
+
+### 8.1 Modelo (`api/models.py`)
+
+Se añadió el campo `etfs_favoritos` (String 2000) al modelo `Cliente`. Almacena los tickers separados por comas. El método `to_dict()` lo devuelve como lista Python.
+
+### 8.2 Catálogo de ETFs (`api/app.py`)
+
+Se creó un catálogo estático con ~250 activos en 12 categorías:
+
+| Categoría                  | Ejemplos                        |
+|----------------------------|---------------------------------|
+| Acciones populares US      | AAPL, TSLA, GOOGL, AMZN, MSFT  |
+| Acciones populares Europa  | SAN, BBVA, TEF, SAP, ASML      |
+| ETFs renta variable        | SPY, QQQ, VTI, IWM             |
+| ETFs renta fija            | BND, TLT, AGG                  |
+| ETFs sectoriales           | XLF, XLE, XLK                  |
+| ...y más                   |                                 |
+
+### 8.3 Endpoints
+
+| Método | Ruta                      | Descripción                                              |
+|--------|---------------------------|----------------------------------------------------------|
+| GET    | `/etfs/catalogo?q=&limit=` | Búsqueda del catálogo con filtro por texto (máx 500)     |
+| GET    | `/cliente/etfs-favoritos`  | Devuelve los favoritos del usuario logueado               |
+| POST   | `/cliente/etfs-favoritos`  | Guarda la lista de favoritos (máximo 50)                  |
+
+### 8.4 Selector multi-selección en el dashboard
+
+Se implementó un **dropdown con buscador** para seleccionar activos:
+
+- **Campo de búsqueda** que filtra el catálogo en tiempo real
+- **Dropdown con categorías** que muestra ticker + nombre + ✓ si está seleccionado
+- **Tags** debajo del buscador con cada activo seleccionado (click en × para eliminar)
+- **Badge contador** cuando hay más de 3 activos seleccionados
+- Botón **★ Guardar favoritos** que persiste la selección en la BD
+
+Clases CSS añadidas:
+
+| Clase                   | Descripción                                            |
+|-------------------------|--------------------------------------------------------|
+| `.etf-select-wrapper`   | Contenedor relativo para input + dropdown              |
+| `.etf-selected-tags`    | Contenedor flex-wrap para los tags de selección        |
+| `.etf-tag`              | Tag azul con ticker y botón ×                          |
+| `.etf-tag-count`        | Badge con el número total de seleccionados             |
+| `.etf-dropdown`         | Dropdown absoluto con scroll, z-index 90               |
+| `.etf-dropdown-category`| Encabezado de categoría en el dropdown                 |
+| `.etf-dropdown-item`    | Fila del dropdown (ticker + nombre + check)            |
+| `.etf-dropdown-check`   | ✓ verde visible cuando el activo está seleccionado     |
+
+---
+
+## 9. Selección de más de 3 activos
+
+Se eliminó el límite de 3 tickers para la comparación. Ahora el usuario puede seleccionar tantos activos como quiera (hasta el máximo de 50 favoritos guardados). El formulario de comparación envía todos los tickers seleccionados.
+
+---
+
+## 10. Alertas guardadas en base de datos por usuario
+
+### 10.1 Problema
+
+Las alertas se almacenaban en una **lista en memoria** (`alerts_memory`) en el servidor Python. Esto causaba:
+- Se perdían al reiniciar el servidor
+- Todos los usuarios compartían las mismas alertas (sin filtro por usuario)
+
+### 10.2 Modelo (`api/models.py`)
+
+Se creó el modelo `Alerta`:
+
+| Campo        | Tipo       | Descripción                                    |
+|--------------|------------|------------------------------------------------|
+| `id`         | Integer PK | Identificador auto-incremental                 |
+| `cliente_id` | Integer FK | Referencia al cliente propietario               |
+| `ticker`     | String(20) | Ticker del activo                               |
+| `metrica`    | String(50) | Métrica a vigilar (ej: "pe_ratio", "rsi")      |
+| `condicion`  | String(2)  | Operador de comparación: `>` o `<`              |
+| `umbral`     | Float      | Valor umbral para disparar la alerta            |
+| `creada_en`  | DateTime   | Fecha de creación                               |
+
+### 10.3 Endpoints actualizados (`api/app.py`)
+
+Los 3 endpoints ahora requieren sesión activa y filtran por `cliente_id`:
+
+| Método | Ruta                        | Cambio                                                      |
+|--------|-----------------------------|--------------------------------------------------------------|
+| GET    | `/api/v1/alertas`           | Solo devuelve alertas del usuario logueado                   |
+| POST   | `/api/v1/alertas`           | Crea la alerta asociada al `cliente_id` de la sesión         |
+| DELETE | `/api/v1/alertas/<id>`      | Solo permite eliminar alertas propias del usuario             |
+
+### 10.4 Frontend (`dashboard/app.js`)
+
+Se añadió `credentials: "include"` a los 3 fetch de alertas para enviar la cookie de sesión con cada petición.
+
+### 10.5 Base de datos
+
+- Nueva tabla: `alertas` con FK a `clientes(id)`
+- Creada con: `CREATE TABLE IF NOT EXISTS alertas (...)`

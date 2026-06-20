@@ -87,33 +87,33 @@
 
           <form id="compareForm" class="compare-form">
             <label>
-              <span>Tickers</span>
+              <span>Tickers — selecciona tus activos</span>
               <div class="etf-select-wrapper" id="etfSelectWrapper">
-                <div class="etf-selected-tags" id="etfSelectedTags"></div>
                 <input
                   id="etfSearchInput"
                   type="text"
-                  placeholder="Buscar ETF por ticker o nombre..."
+                  placeholder="Buscar ETF o acción por ticker o nombre..."
                   autocomplete="off"
                 />
                 <div class="etf-dropdown" id="etfDropdown" hidden></div>
               </div>
+              <div class="etf-selected-tags" id="etfSelectedTags"></div>
               <input id="tickersInput" name="tickers" type="hidden" value="SPY, QQQ, IWM" />
             </label>
 
-            <label>
-              <span>Periodo</span>
-              <select id="periodInput" name="periodo">
-                <option value="1mo">1 mes</option>
-                <option value="3mo">3 meses</option>
-                <option value="6mo">6 meses</option>
-                <option value="1y" selected>1 año</option>
-                <option value="2y">2 años</option>
-                <option value="5y">5 años</option>
-              </select>
-            </label>
+            <div class="form-row">
+              <label>
+                <span>Periodo</span>
+                <select id="periodInput" name="periodo">
+                  <option value="1mo">1 mes</option>
+                  <option value="3mo">3 meses</option>
+                  <option value="6mo">6 meses</option>
+                  <option value="1y" selected>1 año</option>
+                  <option value="2y">2 años</option>
+                  <option value="5y">5 años</option>
+                </select>
+              </label>
 
-            <div class="compare-actions">
               <button class="primary-button" type="submit">Comparar activos</button>
               <button class="secondary-button" type="button" id="saveFavoritesBtn" title="Guardar selección como favoritos">★ Guardar favoritos</button>
             </div>

@@ -33,7 +33,7 @@ class Cliente(db.Model):
     # ETFs a los que quiere suscribirse para recibir alertas
     telegram_tickers = db.Column(db.String(500), nullable=True)
     # ETFs favoritos del usuario (separados por comas)
-    etfs_favoritos = db.Column(db.String(1000), nullable=True)
+    etfs_favoritos = db.Column(db.String(2000), nullable=True)
 
     def set_password(self, password: str) -> None:
         """Genera y guarda el hash de la contraseña (nunca se guarda en texto plano)."""
@@ -110,3 +110,28 @@ class TelegramToken(db.Model):
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         expires = self.expires_at.replace(tzinfo=None) if self.expires_at else now
         return now > expires
+
+
+class Alerta(db.Model):
+    """Alerta de precio/métrica asociada a un usuario."""
+    __tablename__ = "alertas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    ticker = db.Column(db.String(20), nullable=False)
+    metrica = db.Column(db.String(50), nullable=False)
+    condicion = db.Column(db.String(2), nullable=False)
+    umbral = db.Column(db.Float, nullable=False)
+    creada_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    cliente = db.relationship("Cliente", backref=db.backref("alertas", lazy=True))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "ticker": self.ticker,
+            "metrica": self.metrica,
+            "condicion": self.condicion,
+            "umbral": self.umbral,
+            "creada_en": self.creada_en.isoformat() if self.creada_en else None,
+        }
