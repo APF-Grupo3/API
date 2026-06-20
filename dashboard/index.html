@@ -23,16 +23,38 @@
             Yahoo Finance · Metricas cuantitativas · Alertas
           </p>
         </div>
-        <button id="telegramButton" class="telegram-button" type="button">
-          <span class="telegram-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path
-                d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"
-              />
-            </svg>
-          </span>
-          Enviar resumen por Telegram
-        </button>
+        <div class="hero-actions">
+          <!-- Telegram: se muestra vincular o enviar según estado -->
+          <button id="telegramLinkButton" class="telegram-button telegram-link" type="button" hidden>
+            <span class="telegram-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+            </span>
+            Vincular Telegram
+          </button>
+          <button id="telegramButton" class="telegram-button" type="button" hidden>
+            <span class="telegram-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+            </span>
+            Enviar resumen por Telegram
+          </button>
+
+          <!-- Icono de perfil de usuario -->
+          <div class="user-profile-wrapper" id="userProfileWrapper" hidden>
+            <button id="userProfileButton" class="user-profile-button" type="button" title="Mi perfil">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </button>
+            <div id="userProfilePanel" class="user-profile-panel" hidden>
+              <h3>Mi cuenta</h3>
+              <div class="profile-field"><span>Nombre</span><strong id="profileName">-</strong></div>
+              <div class="profile-field"><span>Email</span><strong id="profileEmail">-</strong></div>
+              <div class="profile-field"><span>País</span><strong id="profileCountry">-</strong></div>
+              <div class="profile-field"><span>Teléfono</span><strong id="profilePhone">-</strong></div>
+              <div class="profile-field"><span>Telegram</span><strong id="profileTelegram">-</strong></div>
+              <hr/>
+              <button id="logoutButton" class="logout-button" type="button">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <section class="stats-grid">
@@ -66,13 +88,17 @@
           <form id="compareForm" class="compare-form">
             <label>
               <span>Tickers</span>
-              <input
-                id="tickersInput"
-                name="tickers"
-                type="text"
-                value="SPY, QQQ, IWM"
-                placeholder="SPY, QQQ, IWM"
-              />
+              <div class="etf-select-wrapper" id="etfSelectWrapper">
+                <div class="etf-selected-tags" id="etfSelectedTags"></div>
+                <input
+                  id="etfSearchInput"
+                  type="text"
+                  placeholder="Buscar ETF por ticker o nombre..."
+                  autocomplete="off"
+                />
+                <div class="etf-dropdown" id="etfDropdown" hidden></div>
+              </div>
+              <input id="tickersInput" name="tickers" type="hidden" value="SPY, QQQ, IWM" />
             </label>
 
             <label>
@@ -87,7 +113,10 @@
               </select>
             </label>
 
-            <button class="primary-button" type="submit">Comparar activos</button>
+            <div class="compare-actions">
+              <button class="primary-button" type="submit">Comparar activos</button>
+              <button class="secondary-button" type="button" id="saveFavoritesBtn" title="Guardar selección como favoritos">★ Guardar favoritos</button>
+            </div>
           </form>
 
           <p id="feedbackMessage" class="feedback" aria-live="polite"></p>

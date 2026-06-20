@@ -1,7 +1,33 @@
 const state = {
   returnsChart: null,
   sharpeChart: null,
+  cliente: null, // usuario logueado (de sessionStorage)
 };
+
+// ── Sesión ──
+function getSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem("cliente"));
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(cliente) {
+  sessionStorage.setItem("cliente", JSON.stringify(cliente));
+  state.cliente = cliente;
+}
+
+function clearSession() {
+  sessionStorage.removeItem("cliente");
+  state.cliente = null;
+}
+
+// Redirigir a login si no hay sesión
+state.cliente = getSession();
+if (!state.cliente) {
+  window.location.href = "/dashboard/auth";
+}
 
 const elements = {
   apiStatus: document.getElementById("apiStatus"),
@@ -18,6 +44,16 @@ const elements = {
   alertForm: document.getElementById("alertForm"),
   alertsList: document.getElementById("alertsList"),
   telegramButton: document.getElementById("telegramButton"),
+  telegramLinkButton: document.getElementById("telegramLinkButton"),
+  userProfileWrapper: document.getElementById("userProfileWrapper"),
+  userProfileButton: document.getElementById("userProfileButton"),
+  userProfilePanel: document.getElementById("userProfilePanel"),
+  profileName: document.getElementById("profileName"),
+  profileEmail: document.getElementById("profileEmail"),
+  profileCountry: document.getElementById("profileCountry"),
+  profilePhone: document.getElementById("profilePhone"),
+  profileTelegram: document.getElementById("profileTelegram"),
+  logoutButton: document.getElementById("logoutButton"),
 };
 
 function setFeedback(message, tone = "default") {
@@ -368,6 +404,152 @@ async function sendTelegramSummary() {
   }
 }
 
+// ── Perfil de usuario ──
+function applyProfile() {
+  if (!state.cliente) return;
+  elements.userProfileWrapper.hidden = false;
+  elements.profileName.textContent = `${state.cliente.nombre} ${state.cliente.apellido || ""}`.trim();
+  elements.profileEmail.textContent = state.cliente.email;
+  elements.profileCountry.textContent = state.cliente.pais || "-";
+  elements.profilePhone.textContent = state.cliente.telefono || "-";
+  elements.profileTelegram.textContent = state.cliente.telegram_vinculado ? "Vinculado ✓" : "No vinculado";
+
+  // Mostrar SOLO el botón que corresponda según BD
+  if (state.cliente.telegram_vinculado) {
+    elements.telegramButton.hidden = false;
+    elements.telegramLinkButton.hidden = true;
+  } else {
+    elements.telegramButton.hidden = true;
+    elements.telegramLinkButton.hidden = false;
+  }
+}
+
+async function renderProfile() {
+  // Siempre consultar la BD para tener el estado real de telegram_vinculado
+  try {
+    const response = await fetch("/api/v1/sesion");
+    const data = await response.json();
+    if (data.autenticado && data.cliente) {
+      saveSession(data.cliente);
+    } else {
+      // Sesión del servidor caducada → redirigir a login
+      clearSession();
+      window.location.href = "/dashboard/auth";
+      return;
+    }
+  } catch {
+    // Si falla la red, usar datos locales como fallback
+  }
+  applyProfile();
+}
+
+// Toggle panel de perfil
+elements.userProfileButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  elements.userProfilePanel.hidden = !elements.userProfilePanel.hidden;
+});
+
+document.addEventListener("click", (e) => {
+  if (!elements.userProfileWrapper.contains(e.target)) {
+    elements.userProfilePanel.hidden = true;
+  }
+});
+
+// Cerrar sesión
+elements.logoutButton.addEventListener("click", async () => {
+  try {
+    await fetch("/api/v1/logout", { method: "POST" });
+  } catch {
+    // silenciar
+  }
+  clearSession();
+  window.location.href = "/dashboard/auth";
+});
+
+// ── Vincular Telegram ──
+async function linkTelegram() {
+  if (!state.cliente) return;
+
+  try {
+    const response = await fetch("/api/v1/telegram/generar-enlace", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cliente_id: state.cliente.id }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (data.telegram_vinculado) {
+        // Ya está vinculado, actualizar estado
+        state.cliente.telegram_vinculado = true;
+        saveSession(state.cliente);
+        applyProfile();
+        setFeedback("Tu Telegram ya está vinculado.", "success");
+        return;
+      }
+      setFeedback(data.error || "No se pudo generar el enlace.", "error");
+      return;
+    }
+
+    // Mostrar modal con el enlace
+    showTelegramModal(data.enlace, data.expira);
+  } catch (error) {
+    setFeedback("Error al conectar con el servidor.", "error");
+  }
+}
+
+function showTelegramModal(enlace, expira) {
+  // Eliminar modal previo si existe
+  const prev = document.querySelector(".telegram-modal-overlay");
+  if (prev) prev.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "telegram-modal-overlay";
+  overlay.innerHTML = `
+    <div class="telegram-modal">
+      <h3>Vincular tu Telegram</h3>
+      <p>Abre este enlace en Telegram para vincular tu cuenta. El enlace expira en 15 minutos.</p>
+      <a href="${enlace}" target="_blank" rel="noopener">Abrir en Telegram</a>
+      <span class="modal-timer">Expira: ${new Date(expira).toLocaleTimeString("es-ES")}</span>
+      <button class="modal-close" type="button">Cerrar</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".modal-close").addEventListener("click", () => {
+    overlay.remove();
+    // Refrescar datos del cliente para ver si se vinculó
+    refreshClienteData();
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+      refreshClienteData();
+    }
+  });
+}
+
+async function refreshClienteData() {
+  if (!state.cliente) return;
+  try {
+    const response = await fetch("/api/v1/sesion");
+    const data = await response.json();
+    if (data.autenticado && data.cliente) {
+      saveSession(data.cliente);
+      applyProfile();
+      if (data.cliente.telegram_vinculado) {
+        setFeedback("¡Telegram vinculado correctamente!", "success");
+      }
+    }
+  } catch {
+    // silenciar
+  }
+}
+
+elements.telegramLinkButton.addEventListener("click", linkTelegram);
+
 elements.compareForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await loadComparison();
@@ -385,6 +567,8 @@ elements.alertsList.addEventListener("click", async (event) => {
 
 elements.telegramButton.addEventListener("click", sendTelegramSummary);
 
+// ── Init ──
+renderProfile();
 fetchHealth();
 loadComparison();
 loadAlerts();

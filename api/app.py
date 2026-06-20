@@ -1222,5 +1222,271 @@ def verify_and_notify_alerts() -> object:
     )
 
 
+# ---------------------------------------------------------------------------
+# ETFs – catálogo y favoritos del usuario
+# ---------------------------------------------------------------------------
+
+_etf_catalog: list[dict] = []
+
+
+def _load_etf_catalog() -> None:
+    """Carga un catálogo de ETFs populares.
+
+    Usa una lista curada de ~200 ETFs populares organizados por categoría.
+    Se carga una sola vez al arrancar la app.
+    """
+    global _etf_catalog
+    if _etf_catalog:
+        return
+
+    etfs_por_categoria = {
+        "Índices amplios US": [
+            ("SPY", "SPDR S&P 500 ETF"),
+            ("VOO", "Vanguard S&P 500 ETF"),
+            ("IVV", "iShares Core S&P 500 ETF"),
+            ("QQQ", "Invesco QQQ Trust (Nasdaq 100)"),
+            ("DIA", "SPDR Dow Jones Industrial Avg"),
+            ("IWM", "iShares Russell 2000"),
+            ("IWB", "iShares Russell 1000"),
+            ("VTI", "Vanguard Total Stock Market"),
+            ("MDY", "SPDR S&P MidCap 400"),
+            ("IJH", "iShares Core S&P Mid-Cap"),
+            ("IJR", "iShares Core S&P Small-Cap"),
+            ("RSP", "Invesco S&P 500 Equal Weight"),
+        ],
+        "Índices internacionales": [
+            ("EFA", "iShares MSCI EAFE"),
+            ("VEA", "Vanguard FTSE Developed Markets"),
+            ("IEFA", "iShares Core MSCI EAFE"),
+            ("VWO", "Vanguard FTSE Emerging Markets"),
+            ("EEM", "iShares MSCI Emerging Markets"),
+            ("IEMG", "iShares Core MSCI Emerging"),
+            ("ACWI", "iShares MSCI ACWI"),
+            ("VEU", "Vanguard FTSE All-World ex-US"),
+            ("VXUS", "Vanguard Total Intl Stock"),
+            ("EWJ", "iShares MSCI Japan"),
+            ("FXI", "iShares China Large-Cap"),
+            ("EWZ", "iShares MSCI Brazil"),
+            ("EWG", "iShares MSCI Germany"),
+            ("EWU", "iShares MSCI United Kingdom"),
+            ("INDA", "iShares MSCI India"),
+            ("EWT", "iShares MSCI Taiwan"),
+            ("EWY", "iShares MSCI South Korea"),
+            ("EWA", "iShares MSCI Australia"),
+            ("EWC", "iShares MSCI Canada"),
+            ("MCHI", "iShares MSCI China"),
+        ],
+        "Sectores US": [
+            ("XLK", "Technology Select Sector SPDR"),
+            ("XLF", "Financial Select Sector SPDR"),
+            ("XLE", "Energy Select Sector SPDR"),
+            ("XLV", "Health Care Select Sector SPDR"),
+            ("XLI", "Industrial Select Sector SPDR"),
+            ("XLY", "Consumer Discretionary SPDR"),
+            ("XLP", "Consumer Staples Select SPDR"),
+            ("XLU", "Utilities Select Sector SPDR"),
+            ("XLB", "Materials Select Sector SPDR"),
+            ("XLRE", "Real Estate Select Sector SPDR"),
+            ("XLC", "Communication Svcs Select SPDR"),
+            ("VGT", "Vanguard Information Technology"),
+            ("VHT", "Vanguard Health Care"),
+            ("VFH", "Vanguard Financials"),
+            ("VDE", "Vanguard Energy"),
+            ("VIS", "Vanguard Industrials"),
+            ("VCR", "Vanguard Consumer Discretionary"),
+            ("VDC", "Vanguard Consumer Staples"),
+        ],
+        "Renta fija": [
+            ("AGG", "iShares Core US Aggregate Bond"),
+            ("BND", "Vanguard Total Bond Market"),
+            ("TLT", "iShares 20+ Year Treasury Bond"),
+            ("IEF", "iShares 7-10 Year Treasury"),
+            ("SHY", "iShares 1-3 Year Treasury Bond"),
+            ("LQD", "iShares Investment Grade Corp"),
+            ("HYG", "iShares High Yield Corp Bond"),
+            ("JNK", "SPDR Bloomberg High Yield Bond"),
+            ("TIP", "iShares TIPS Bond"),
+            ("VCSH", "Vanguard Short-Term Corp Bond"),
+            ("VCIT", "Vanguard Intermediate Corp Bond"),
+            ("VGSH", "Vanguard Short-Term Treasury"),
+            ("EMB", "iShares J.P. Morgan USD EM Bond"),
+            ("MUB", "iShares National Muni Bond"),
+            ("BNDX", "Vanguard Total Intl Bond"),
+            ("SHV", "iShares Short Treasury Bond"),
+            ("BIL", "SPDR Bloomberg 1-3M T-Bill"),
+        ],
+        "Materias primas": [
+            ("GLD", "SPDR Gold Shares"),
+            ("IAU", "iShares Gold Trust"),
+            ("SLV", "iShares Silver Trust"),
+            ("USO", "United States Oil Fund"),
+            ("DBC", "Invesco DB Commodity Index"),
+            ("PDBC", "Invesco Optimum Yield Div Comm"),
+            ("PPLT", "abrdn Platinum Shares"),
+            ("PALL", "abrdn Palladium Shares"),
+            ("CPER", "United States Copper Index"),
+            ("WEAT", "Teucrium Wheat Fund"),
+            ("CORN", "Teucrium Corn Fund"),
+        ],
+        "Inmobiliario (REITs)": [
+            ("VNQ", "Vanguard Real Estate"),
+            ("VNQI", "Vanguard Global ex-US Real Estate"),
+            ("IYR", "iShares US Real Estate"),
+            ("SCHH", "Schwab US REIT"),
+            ("REM", "iShares Mortgage Real Estate"),
+            ("XLRE", "Real Estate Select Sector SPDR"),
+        ],
+        "Temáticos y megatendencias": [
+            ("ARKK", "ARK Innovation ETF"),
+            ("ARKG", "ARK Genomic Revolution"),
+            ("ARKW", "ARK Next Generation Internet"),
+            ("ICLN", "iShares Global Clean Energy"),
+            ("TAN", "Invesco Solar ETF"),
+            ("LIT", "Global X Lithium & Battery Tech"),
+            ("BOTZ", "Global X Robotics & AI"),
+            ("HACK", "ETFMG Prime Cyber Security"),
+            ("SKYY", "First Trust Cloud Computing"),
+            ("SOXX", "iShares Semiconductor"),
+            ("SMH", "VanEck Semiconductor"),
+            ("KWEB", "KraneShares CSI China Internet"),
+            ("CIBR", "First Trust NASDAQ Cybersecurity"),
+            ("AIQ", "Global X Artificial Intelligence"),
+            ("DRIV", "Global X Autonomous & EV"),
+            ("BLOK", "Amplify Transformational Data"),
+        ],
+        "Dividendos": [
+            ("VYM", "Vanguard High Dividend Yield"),
+            ("SCHD", "Schwab US Dividend Equity"),
+            ("DVY", "iShares Select Dividend"),
+            ("HDV", "iShares Core High Dividend"),
+            ("SDY", "SPDR S&P Dividend"),
+            ("NOBL", "ProShares S&P 500 Aristocrats"),
+            ("VIG", "Vanguard Dividend Appreciation"),
+            ("DGRO", "iShares Core Dividend Growth"),
+            ("SPYD", "SPDR Portfolio S&P 500 High Div"),
+        ],
+        "Volatilidad y apalancados": [
+            ("TQQQ", "ProShares UltraPro QQQ 3x"),
+            ("SQQQ", "ProShares UltraPro Short QQQ"),
+            ("UPRO", "ProShares UltraPro S&P 500 3x"),
+            ("SPXU", "ProShares UltraPro Short S&P500"),
+            ("UVXY", "ProShares Ultra VIX Short-Term"),
+            ("SVXY", "ProShares Short VIX Short-Term"),
+            ("SSO", "ProShares Ultra S&P 500 2x"),
+            ("SDS", "ProShares UltraShort S&P 500"),
+            ("QLD", "ProShares Ultra QQQ 2x"),
+        ],
+        "Multi-activo y balanced": [
+            ("AOR", "iShares Core Growth Allocation"),
+            ("AOA", "iShares Core Aggressive Allocation"),
+            ("AOM", "iShares Core Moderate Allocation"),
+            ("AOK", "iShares Core Conservative Alloc"),
+            ("VBIAX", "Vanguard Balanced Index"),
+        ],
+    }
+
+    for categoria, etfs in etfs_por_categoria.items():
+        for ticker, nombre in etfs:
+            _etf_catalog.append({
+                "ticker": ticker,
+                "nombre": nombre,
+                "categoria": categoria,
+            })
+
+    _etf_catalog.sort(key=lambda x: x["ticker"])
+
+
+@app.route("/api/v1/etfs/catalogo")
+def etf_catalog() -> object:
+    """Devuelve el catálogo de ETFs disponibles.
+
+    Query params opcionales:
+        q (str): filtro de búsqueda (busca en ticker y nombre).
+        categoria (str): filtra por categoría exacta.
+        limit (int): máximo de resultados (default 50).
+    """
+    if not _etf_catalog:
+        _load_etf_catalog()
+
+    q = (request.args.get("q") or "").strip().upper()
+    categoria = request.args.get("categoria", "").strip()
+    limit = min(int(request.args.get("limit", 50)), 200)
+
+    results = _etf_catalog
+
+    if q:
+        results = [
+            e for e in results
+            if q in e["ticker"].upper() or q in e["nombre"].upper()
+        ]
+
+    if categoria:
+        results = [e for e in results if e["categoria"] == categoria]
+
+    return jsonify({
+        "total": len(results),
+        "etfs": results[:limit],
+        "categorias": sorted(set(e["categoria"] for e in _etf_catalog)),
+    })
+
+
+@app.route("/api/v1/cliente/etfs-favoritos", methods=["GET"])
+def get_etfs_favoritos() -> object:
+    """Devuelve los ETFs favoritos del usuario logueado."""
+    cliente_id = session.get("cliente_id")
+    if not cliente_id:
+        return jsonify({"error": "No autenticado"}), 401
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    favoritos = []
+    if cliente.etfs_favoritos:
+        favoritos = [t.strip() for t in cliente.etfs_favoritos.split(",") if t.strip()]
+
+    return jsonify({"etfs_favoritos": favoritos})
+
+
+@app.route("/api/v1/cliente/etfs-favoritos", methods=["POST"])
+def set_etfs_favoritos() -> object:
+    """Guarda los ETFs favoritos del usuario logueado.
+
+    Body JSON:
+        etfs (list[str]): lista de tickers. Máx 30.
+    """
+    cliente_id = session.get("cliente_id")
+    if not cliente_id:
+        return jsonify({"error": "No autenticado"}), 401
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    etfs = payload.get("etfs", [])
+
+    if not isinstance(etfs, list):
+        return jsonify({"error": "etfs debe ser una lista"}), 400
+
+    # Sanitizar: solo alfanuméricos y punto, max 10 chars cada uno
+    clean = []
+    for t in etfs[:30]:
+        ticker = str(t).strip().upper()
+        if ticker and len(ticker) <= 10:
+            clean.append(ticker)
+
+    cliente.etfs_favoritos = ",".join(clean) if clean else None
+    db.session.commit()
+
+    return jsonify({
+        "status": "ok",
+        "etfs_favoritos": clean,
+        "mensaje": f"{len(clean)} ETFs guardados como favoritos",
+    })
+
+
 if __name__ == "__main__":
+    # ── Cargar catálogo de ETFs en memoria al arrancar ──
+    _load_etf_catalog()
     app.run(debug=True, host="0.0.0.0", port=5000)

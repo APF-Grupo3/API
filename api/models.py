@@ -32,6 +32,8 @@ class Cliente(db.Model):
     telegram_linked_at = db.Column(db.DateTime, nullable=True)
     # ETFs a los que quiere suscribirse para recibir alertas
     telegram_tickers = db.Column(db.String(500), nullable=True)
+    # ETFs favoritos del usuario (separados por comas)
+    etfs_favoritos = db.Column(db.String(1000), nullable=True)
 
     def set_password(self, password: str) -> None:
         """Genera y guarda el hash de la contraseña (nunca se guarda en texto plano)."""
@@ -56,6 +58,7 @@ class Cliente(db.Model):
             "activo": self.activo,
             "telegram_vinculado": self.telegram_chat_id is not None,
             "telegram_tickers": self.telegram_tickers,
+            "etfs_favoritos": [t.strip() for t in self.etfs_favoritos.split(",") if t.strip()] if self.etfs_favoritos else [],
             "fecha_registro": self.fecha_registro.isoformat()
             if self.fecha_registro
             else None,
@@ -104,4 +107,6 @@ class TelegramToken(db.Model):
 
     @property
     def is_expired(self) -> bool:
-        return datetime.now(timezone.utc) > self.expires_at
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        expires = self.expires_at.replace(tzinfo=None) if self.expires_at else now
+        return now > expires
