@@ -11,13 +11,58 @@
 8. [Descripción de cada workflow](#7-descripcion-de-cada-workflow)
 9. [Nuevos endpoints del backend](#8-nuevos-endpoints-del-backend)
 10. [Flujo del botón Telegram en el dashboard](#9-flujo-del-boton-telegram-en-el-dashboard)
-11. [Verificación rápida](#10-verificacion-rapida)
+11. [Vinculación Telegram por usuario](#11-vinculacion-telegram-por-usuario)
+12. [Verificación rápida](#10-verificacion-rapida)
 
 ---
 
 ## Arquitectura
 
 ```
+=== VINCULACIÓN POR USUARIO ===
+
+Dashboard (browser)
+    │
+    │  POST /api/v1/telegram/generar-enlace  { cliente_id }
+    ▼
+Flask API → genera token temporal + deep link
+    │
+    │  devuelve: https://t.me/Bot?start=TOKEN
+    ▼
+Usuario abre el enlace en Telegram
+    │
+    │  /start TOKEN
+    ▼
+n8n (Telegram Trigger)
+    │  extrae chat_id + token
+    │  POST /api/v1/telegram/vincular { token, chat_id }
+    ▼
+Flask API → asocia chat_id con el usuario en BD
+    │  borra el token
+    │  envía mensaje de bienvenida
+    ▼
+✅ Usuario vinculado — recibe mensajes personalizados
+
+=== ENVÍO DIARIO PERSONALIZADO ===
+
+n8n (Schedule 9h L-V)
+    │  GET /api/v1/telegram/usuarios-suscritos
+    ▼
+Flask API → devuelve [{chat_id, tickers, nombre}, ...]
+    │
+    ▼ (por cada usuario)
+n8n → GET /api/v1/comparar?tickers=SPY,QQQ
+    │  Code: formatea mensaje personalizado
+    │  Telegram: envía al chat_id del usuario
+    ▼
+Cada usuario recibe su resumen con SUS ETFs
+```
+
+Regla clave: el backend calcula y provee datos; n8n orquesta y programa; Telegram recibe el resultado.
+
+```
+=== FLUJO GENERAL (sin vinculación) ===
+
 Dashboard (browser)
     │
     │  POST /api/v1/telegram/enviar-resumen  (botón)
@@ -151,9 +196,11 @@ Los tres archivos JSON están en `docs/n8n/`:
 
 | Archivo | Propósito |
 |---------|-----------|
-| `workflow_resumen_diario.json` | Resumen automático a las 9h L-V |
+| `workflow_resumen_diario.json` | Resumen automático a las 9h L-V (chat fijo) |
 | `workflow_verificacion_alertas.json` | Comprueba alertas cada hora en días laborables |
 | `workflow_webhook_comparacion.json` | Webhook para comparación bajo demanda |
+| `workflow_vinculacion_telegram.json` | **NUEVO** — Vincula usuarios con su chat de Telegram |
+| `workflow_resumen_diario_por_usuario.json` | **NUEVO** — Resumen diario personalizado por usuario |
 
 ### Pasos para importar
 
@@ -289,7 +336,132 @@ El botón `Enviar resumen por Telegram` del header ahora:
 
 ---
 
-## 10. Verificación rápida
+## 11. Vinculación Telegram por usuario
+
+### Problema
+
+Cada usuario necesita recibir alertas personalizadas sobre **sus** ETFs. El `chat_id` de Telegram no es un dato que el usuario conozca — se obtiene automáticamente cuando interactúa con el bot.
+
+### Solución: Deep Link + Token temporal
+
+```
+1. Dashboard pide POST /api/v1/telegram/generar-enlace { cliente_id: 5 }
+2. Flask genera un token temporal (64 hex, expira en 15 min) y devuelve:
+   { enlace: "https://t.me/MiBot?start=abc123...", expira: "..." }
+3. El dashboard muestra el enlace o QR al usuario
+4. El usuario abre el enlace → Telegram envía /start abc123... al bot
+5. n8n (workflow_vinculacion_telegram.json) recibe el mensaje:
+   → Extrae chat_id y token
+   → POST /api/v1/telegram/vincular { token: "abc123...", chat_id: "789456" }
+6. Flask valida el token, asocia el chat_id al cliente, borra el token
+7. El usuario recibe un mensaje de bienvenida en Telegram
+```
+
+### Seguridad del token
+
+- El token es de **32 bytes (64 caracteres hex)** generado con `secrets.token_hex`
+- Expira en **15 minutos** — no se puede reutilizar
+- Se **borra inmediatamente** después de usarse
+- Un `chat_id` no puede vincularse a dos cuentas distintas
+- El endpoint `/vincular` no devuelve email ni datos sensibles del usuario
+
+### Endpoints de vinculación
+
+#### `POST /api/v1/telegram/generar-enlace`
+
+Genera un deep link para que el usuario vincule su Telegram.
+
+```json
+// Request
+{ "cliente_id": 5 }
+
+// Response 201
+{
+  "enlace": "https://t.me/FundCompareBot?start=a1b2c3d4...",
+  "token": "a1b2c3d4...",
+  "expira": "2026-06-20T10:15:00+00:00",
+  "mensaje": "El usuario debe abrir este enlace en Telegram para vincular su cuenta."
+}
+```
+
+#### `POST /api/v1/telegram/vincular`
+
+Llamado por n8n cuando recibe el `/start`. Vincula el chat_id con el usuario.
+
+```json
+// Request (desde n8n)
+{ "token": "a1b2c3d4...", "chat_id": "789456123" }
+
+// Response 200
+{ "status": "linked", "mensaje": "Telegram vinculado correctamente para Juan" }
+```
+
+Errores posibles: `404` token no válido, `410` token expirado, `409` chat ya vinculado a otra cuenta.
+
+#### `POST /api/v1/telegram/desvincular`
+
+```json
+// Request
+{ "cliente_id": 5 }
+
+// Response 200
+{ "status": "unlinked", "mensaje": "Telegram desvinculado" }
+```
+
+#### `POST /api/v1/telegram/configurar-tickers`
+
+Configura qué ETFs quiere recibir el usuario por Telegram.
+
+```json
+// Request
+{ "cliente_id": 5, "tickers": "SPY,QQQ,IWM" }
+
+// Response 200
+{ "status": "ok", "tickers": ["SPY", "QQQ", "IWM"], "mensaje": "Tickers actualizados: SPY, QQQ, IWM" }
+```
+
+#### `GET /api/v1/telegram/usuarios-suscritos`
+
+Devuelve usuarios con Telegram vinculado y tickers configurados (para que n8n itere).
+
+```json
+{
+  "total": 2,
+  "usuarios": [
+    { "cliente_id": 5, "nombre": "Juan", "chat_id": "789456123", "tickers": "SPY,QQQ" },
+    { "cliente_id": 8, "nombre": "María", "chat_id": "321654987", "tickers": "IWM,VTI,ARKK" }
+  ]
+}
+```
+
+### Workflows n8n nuevos
+
+#### `workflow_vinculacion_telegram.json`
+
+```
+Telegram Trigger (recibe mensajes)
+  → IF empieza por /start
+    → Code: extrae token + chat_id
+    → HTTP: POST /api/v1/telegram/vincular
+    → IF 200 → OK (Flask ya envía bienvenida)
+    → ELSE → Telegram: notifica error al usuario
+```
+
+#### `workflow_resumen_diario_por_usuario.json`
+
+```
+Schedule (9h L-V)
+  → GET /api/v1/telegram/usuarios-suscritos
+  → Code: separa en items individuales
+  → (por cada usuario)
+    → GET /api/v1/comparar?tickers=SPY,QQQ (los del usuario)
+    → Code: formatea mensaje personalizado con nombre
+    → Telegram: envía al chat_id del usuario
+```
+
+---
+
+## 12. Verificación rápida
 
 ```powershell
 # 1. Configurar credenciales (PowerShell)
@@ -313,6 +485,21 @@ Invoke-RestMethod -Method POST `
   -Uri http://localhost:5000/api/v1/telegram/verificar-alertas `
   -ContentType "application/json" `
   -Body '{"enviar_notificaciones":false}'
+
+# 6. Generar enlace de vinculación para un usuario
+Invoke-RestMethod -Method POST `
+  -Uri http://localhost:5000/api/v1/telegram/generar-enlace `
+  -ContentType "application/json" `
+  -Body '{"cliente_id": 1}'
+
+# 7. Configurar tickers para un usuario vinculado
+Invoke-RestMethod -Method POST `
+  -Uri http://localhost:5000/api/v1/telegram/configurar-tickers `
+  -ContentType "application/json" `
+  -Body '{"cliente_id": 1, "tickers": "SPY,QQQ,IWM"}'
+
+# 8. Ver usuarios suscritos
+Invoke-RestMethod http://localhost:5000/api/v1/telegram/usuarios-suscritos
 ```
 
 Si ves `"status": "sent"` en el paso 4, la integración funciona correctamente.

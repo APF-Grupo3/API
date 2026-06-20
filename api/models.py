@@ -1,9 +1,13 @@
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
+
+# Tiempo de vida del token de vinculación (15 minutos)
+TOKEN_EXPIRY_MINUTES = 15
 
 
 class Cliente(db.Model):
@@ -23,6 +27,11 @@ class Cliente(db.Model):
     fecha_ultima_compra = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
+    # ── Telegram ──
+    telegram_chat_id = db.Column(db.String(50), unique=True, nullable=True)
+    telegram_linked_at = db.Column(db.DateTime, nullable=True)
+    # ETFs a los que quiere suscribirse para recibir alertas
+    telegram_tickers = db.Column(db.String(500), nullable=True)
 
     def set_password(self, password: str) -> None:
         """Genera y guarda el hash de la contraseña (nunca se guarda en texto plano)."""
@@ -45,6 +54,8 @@ class Cliente(db.Model):
             "pais": self.pais,
             "telefono": self.telefono,
             "activo": self.activo,
+            "telegram_vinculado": self.telegram_chat_id is not None,
+            "telegram_tickers": self.telegram_tickers,
             "fecha_registro": self.fecha_registro.isoformat()
             if self.fecha_registro
             else None,
@@ -55,3 +66,42 @@ class Cliente(db.Model):
 
     def __repr__(self) -> str:
         return f"<Cliente {self.email}>"
+
+
+class TelegramToken(db.Model):
+    """Token temporal para vincular un usuario con su chat de Telegram.
+
+    Flujo:
+    1. El usuario pide vincular → se genera un token único y se guarda aquí.
+    2. El usuario abre t.me/Bot?start=TOKEN → Telegram envía /start TOKEN al bot.
+    3. n8n recibe el update, extrae chat_id + token y llama a POST /vincular.
+    4. El backend busca el token aquí, asocia el chat_id al cliente y borra el token.
+
+    El token expira tras TOKEN_EXPIRY_MINUTES para evitar abusos.
+    """
+    __tablename__ = "telegram_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    cliente = db.relationship("Cliente", backref=db.backref("telegram_tokens", lazy=True))
+
+    @staticmethod
+    def generate(cliente_id: int) -> "TelegramToken":
+        """Crea un token seguro de 32 bytes (64 caracteres hex) con expiración."""
+        now = datetime.now(timezone.utc)
+        return TelegramToken(
+            cliente_id=cliente_id,
+            token=secrets.token_hex(32),
+            created_at=now,
+            expires_at=now + timedelta(minutes=TOKEN_EXPIRY_MINUTES),
+        )
+
+    @property
+    def is_expired(self) -> bool:
+        return datetime.now(timezone.utc) > self.expires_at

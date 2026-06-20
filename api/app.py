@@ -8,9 +8,6 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
 for proxy_var in (
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -21,14 +18,18 @@ for proxy_var in (
 ):
     os.environ.pop(proxy_var, None)
 
+import numpy as np
+import pandas as pd
 import yfinance as yf
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
 
 # --- NUEVO: base de datos y autenticación ---
 from configuracion import config
-from models import db
+from models import Cliente, TelegramToken, db
 from auth import auth_bp
+
+
 
 APP_NAME = "FundCompare API"
 APP_VERSION = "1.0.0"
@@ -90,21 +91,33 @@ def _telegram_chat_id() -> str:
     return os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
-def send_telegram_message(text: str) -> dict:
-    """Envía un mensaje al chat de Telegram configurado.
+def _get_bot_username(token: str) -> str | None:
+    """Obtiene el username del bot llamando a getMe de la API de Telegram."""
+    url = f"https://api.telegram.org/bot{token}/getMe"
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            if data.get("ok"):
+                return data["result"].get("username")
+    except Exception:
+        pass
+    return None
 
-    Requiere las variables de entorno TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID.
-    Devuelve el JSON de respuesta de la API de Telegram o un dict con 'ok': False
-    si no están configuradas o si hay error de red.
+
+def send_telegram_message(text: str, chat_id: str | None = None) -> dict:
+    """Envía un mensaje al chat de Telegram indicado (o al global por defecto).
+
+    Si se pasa chat_id, se envía a ese chat.  Si no, usa TELEGRAM_CHAT_ID.
+    Requiere siempre la variable TELEGRAM_BOT_TOKEN.
     """
     token = _telegram_token()
-    chat_id = _telegram_chat_id()
+    chat_id = chat_id or _telegram_chat_id()
 
-    if not token or not chat_id:
-        return {
-            "ok": False,
-            "error": "TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID no configurados",
-        }
+    if not token:
+        return {"ok": False, "error": "TELEGRAM_BOT_TOKEN no configurado"}
+    if not chat_id:
+        return {"ok": False, "error": "No se indicó chat_id ni está TELEGRAM_CHAT_ID configurado"}
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = json.dumps(
@@ -857,6 +870,216 @@ def telegram_status() -> object:
     )
 
 
+# ---------------------------------------------------------------------------
+# Telegram — vinculación por usuario
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/v1/telegram/generar-enlace", methods=["POST"])
+def telegram_generate_link() -> object:
+    """Genera un deep link para que un usuario vincule su cuenta de Telegram.
+
+    Body JSON:
+        cliente_id (int): ID del cliente registrado.
+
+    Devuelve:
+        enlace  — URL tipo https://t.me/BOT?start=TOKEN
+        token   — el token generado (solo para debug / logs internos)
+        expira  — cuándo caduca
+    """
+    payload = request.get_json(silent=True) or {}
+    cliente_id = payload.get("cliente_id")
+
+    if not cliente_id:
+        return jsonify({"error": "Falta cliente_id"}), 400
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    if cliente.telegram_chat_id:
+        return jsonify({
+            "error": "Este cliente ya tiene Telegram vinculado",
+            "telegram_vinculado": True,
+        }), 409
+
+    # Invalidar tokens previos sin usar de este cliente
+    TelegramToken.query.filter_by(cliente_id=cliente.id).delete()
+
+    tk = TelegramToken.generate(cliente.id)
+    db.session.add(tk)
+    db.session.commit()
+
+    bot_token = _telegram_token()
+    # Obtener el username del bot para construir el deep link
+    bot_username = _get_bot_username(bot_token) if bot_token else None
+
+    if not bot_username:
+        return jsonify({
+            "error": "No se pudo obtener el username del bot. Verifica TELEGRAM_BOT_TOKEN.",
+        }), 503
+
+    return jsonify({
+        "enlace": f"https://t.me/{bot_username}?start={tk.token}",
+        "token": tk.token,
+        "expira": tk.expires_at.isoformat(),
+        "mensaje": "El usuario debe abrir este enlace en Telegram para vincular su cuenta.",
+    }), 201
+
+
+@app.route("/api/v1/telegram/vincular", methods=["POST"])
+def telegram_link_user() -> object:
+    """Vincula un chat_id de Telegram con un usuario a través del token.
+
+    Este endpoint lo llama n8n cuando recibe el /start del bot.
+
+    Body JSON:
+        token   (str): token que el usuario envió con /start.
+        chat_id (str): chat ID de Telegram extraído del update.
+
+    Solo devuelve el nombre del usuario vinculado, no email ni otros datos.
+    """
+    payload = request.get_json(silent=True) or {}
+    token_str = (payload.get("token") or "").strip()
+    chat_id = str(payload.get("chat_id", "")).strip()
+
+    if not token_str or not chat_id:
+        return jsonify({"error": "Faltan token y/o chat_id"}), 400
+
+    tk = TelegramToken.query.filter_by(token=token_str).first()
+
+    if not tk:
+        return jsonify({"error": "Token no válido o ya utilizado"}), 404
+
+    if tk.is_expired:
+        db.session.delete(tk)
+        db.session.commit()
+        return jsonify({"error": "El token ha expirado. Genera uno nuevo."}), 410
+
+    # Comprobar que el chat_id no está ya usado por otro cliente
+    existing = Cliente.query.filter_by(telegram_chat_id=chat_id).first()
+    if existing and existing.id != tk.cliente_id:
+        return jsonify({"error": "Este chat de Telegram ya está vinculado a otra cuenta"}), 409
+
+    cliente = Cliente.query.get(tk.cliente_id)
+    if not cliente:
+        db.session.delete(tk)
+        db.session.commit()
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    cliente.telegram_chat_id = chat_id
+    cliente.telegram_linked_at = datetime.now(timezone.utc)
+
+    # Borrar el token usado
+    db.session.delete(tk)
+    db.session.commit()
+
+    # Enviar mensaje de bienvenida al usuario
+    send_telegram_message(
+        f"✅ *¡Vinculación exitosa!*\n\n"
+        f"Hola {cliente.nombre}, tu cuenta de FundCompare está vinculada.\n"
+        f"Recibirás alertas y resúmenes de tus ETFs por aquí.",
+        chat_id=chat_id,
+    )
+
+    return jsonify({
+        "status": "linked",
+        "cliente_id": cliente.id,
+        "mensaje": f"Telegram vinculado correctamente para {cliente.nombre}",
+    })
+
+
+@app.route("/api/v1/telegram/desvincular", methods=["POST"])
+def telegram_unlink_user() -> object:
+    """Desvincula Telegram de un cliente.
+
+    Body JSON:
+        cliente_id (int): ID del cliente.
+    """
+    payload = request.get_json(silent=True) or {}
+    cliente_id = payload.get("cliente_id")
+
+    if not cliente_id:
+        return jsonify({"error": "Falta cliente_id"}), 400
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    if not cliente.telegram_chat_id:
+        return jsonify({"error": "Este cliente no tiene Telegram vinculado"}), 400
+
+    cliente.telegram_chat_id = None
+    cliente.telegram_linked_at = None
+    db.session.commit()
+
+    return jsonify({"status": "unlinked", "mensaje": "Telegram desvinculado"})
+
+
+@app.route("/api/v1/telegram/configurar-tickers", methods=["POST"])
+def telegram_set_tickers() -> object:
+    """Configura los ETFs/tickers que un usuario quiere recibir por Telegram.
+
+    Body JSON:
+        cliente_id (int): ID del cliente.
+        tickers    (str): tickers separados por comas, ej. "SPY,QQQ,IWM".
+    """
+    payload = request.get_json(silent=True) or {}
+    cliente_id = payload.get("cliente_id")
+    tickers_raw = (payload.get("tickers") or "").strip()
+
+    if not cliente_id:
+        return jsonify({"error": "Falta cliente_id"}), 400
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    if not cliente.telegram_chat_id:
+        return jsonify({"error": "Vincula primero tu cuenta de Telegram"}), 400
+
+    # Normalizar: mayúsculas, sin espacios, sin duplicados
+    tickers_list = list(dict.fromkeys(
+        t.strip().upper() for t in tickers_raw.split(",") if t.strip()
+    ))
+    cliente.telegram_tickers = ",".join(tickers_list) if tickers_list else None
+    db.session.commit()
+
+    return jsonify({
+        "status": "ok",
+        "tickers": tickers_list,
+        "mensaje": f"Tickers actualizados: {', '.join(tickers_list)}" if tickers_list
+                   else "Se han eliminado todos los tickers de alerta",
+    })
+
+
+@app.route("/api/v1/telegram/usuarios-suscritos")
+def telegram_subscribed_users() -> object:
+    """Devuelve la lista de usuarios con Telegram vinculado y sus tickers.
+
+    Este endpoint es para que n8n itere y envíe mensajes personalizados.
+    Solo expone lo mínimo necesario: id, nombre, chat_id y tickers.
+    """
+    clientes = Cliente.query.filter(
+        Cliente.telegram_chat_id.isnot(None),
+        Cliente.activo.is_(True),
+        Cliente.telegram_tickers.isnot(None),
+    ).all()
+
+    return jsonify({
+        "total": len(clientes),
+        "usuarios": [
+            {
+                "cliente_id": c.id,
+                "nombre": c.nombre,
+                "chat_id": c.telegram_chat_id,
+                "tickers": c.telegram_tickers,
+            }
+            for c in clientes
+        ],
+    })
+
+
 @app.route("/api/v1/telegram/enviar-resumen", methods=["POST"])
 def telegram_summary() -> object:
     """Calcula métricas para los tickers indicados y envía el resumen por Telegram.
@@ -987,20 +1210,10 @@ def verify_and_notify_alerts() -> object:
 
     return jsonify(
         {
-            "status": "prepared",
-            "message": "Integracion con Telegram preparada para fase posterior",
-            "metricas_recomendadas_para_alertas": [
-                "volatilidad_anual",
-                "sharpe_ratio",
-                "sortino_ratio",
-                "max_drawdown",
-                "momentum_20d",
-                "rsi_14",
-                "bollinger_score",
-                "distancia_sma50",
-                "volumen_actual",
-                "volumen_medio_20d",
-            ],
+            "total_alertas": len(alerts_memory),
+            "alertas_disparadas": len(triggered),
+            "detalle": triggered,
+            "notificaciones_enviadas": send_notifications and len(triggered) > 0,
         }
     )
 
