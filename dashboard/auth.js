@@ -37,6 +37,7 @@ async function enviarJSON(url, payload) {
   const respuesta = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include", // necesario para que la cookie de sesión se guarde
     body: JSON.stringify(payload),
   });
   const datos = await respuesta.json().catch(() => ({}));
@@ -62,8 +63,8 @@ loginForm.addEventListener("submit", async (evento) => {
       return;
     }
     mostrarMensaje(`Bienvenido, ${datos.cliente.nombre}`, "success");
-    // Aquí se podría redirigir al dashboard principal, por ejemplo:
-    // window.location.href = "/dashboard";
+    // Sesión creada en el servidor: ya podemos pasar al dashboard.
+    window.location.href = "/dashboard";
   } catch (error) {
     mostrarMensaje("Error de conexión con el servidor", "error");
   } finally {

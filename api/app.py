@@ -19,10 +19,10 @@ for proxy_var in (
     os.environ.pop(proxy_var, None)
 
 import yfinance as yf
-from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from flask_cors import CORS
 
-# --- NUEVO: base de datos y autenticación ---
+# --- base de datos y autenticación ---
 from configuracion import config
 from models import db
 from auth import auth_bp
@@ -48,9 +48,9 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 yf.set_tz_cache_location(str(CACHE_DIR))
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
-# --- NUEVO: configuración y base de datos ---
+# --- configuración y base de datos ---
 entorno = os.environ.get("FLASK_ENV", "development")
 app.config.from_object(config[entorno])
 
@@ -209,10 +209,12 @@ def root() -> object:
 
 @app.route("/dashboard")
 def dashboard_index() -> object:
+    # Login obligatorio: si no hay sesión activa, redirige a la pantalla de auth.
+    if not session.get("cliente_id"):
+        return redirect("/dashboard/auth")
     return send_from_directory(DASHBOARD_DIR, "index.html")
 
 
-# --- NUEVO: ruta directa a la pantalla de login/registro ---
 @app.route("/dashboard/auth")
 def dashboard_auth() -> object:
     return send_from_directory(DASHBOARD_DIR, "auth.html")
@@ -220,6 +222,8 @@ def dashboard_auth() -> object:
 
 @app.route("/dashboard/<path:filename>")
 def dashboard_assets(filename: str) -> object:
+    # Los archivos estáticos (css/js) deben servirse siempre,
+    # incluso sin sesión, o la propia pantalla de login no podría cargar su CSS/JS.
     return send_from_directory(DASHBOARD_DIR, filename)
 
 
