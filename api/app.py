@@ -304,7 +304,9 @@ def calculate_volume_metrics(history: pd.DataFrame) -> dict:
     )
 
     volumen_superior_media = (
-        volumen_medio_20d is not None and volumen_actual > volumen_medio_20d
+        bool(volumen_actual > volumen_medio_20d)
+        if volumen_medio_20d is not None
+        else None
     )
 
     return {
@@ -327,18 +329,18 @@ def build_signal_flags(
     Se mantienen los nombres originales para no romper otros bloques.
     """
     return {
-        "cruce_medias_alcista": (
+        "cruce_medias_alcista": bool(
             sma_20 is not None and sma_50 is not None and sma_20 > sma_50
         ),
-        "cruce_medias_bajista": (
+        "cruce_medias_bajista": bool(
             sma_20 is not None and sma_50 is not None and sma_20 < sma_50
         ),
-        "rsi_sobrecompra": rsi_14 is not None and rsi_14 > 70,
-        "rsi_sobreventa": rsi_14 is not None and rsi_14 < 30,
-        "volatilidad_alta": annual_volatility > 0.35,
-        "momentum_alcista": momentum_20d is not None and momentum_20d > 0.05,
-        "momentum_bajista": momentum_20d is not None and momentum_20d < -0.05,
-        "rentabilidad_negativa": total_return < 0,
+        "rsi_sobrecompra": bool(rsi_14 is not None and rsi_14 > 70),
+        "rsi_sobreventa": bool(rsi_14 is not None and rsi_14 < 30),
+        "volatilidad_alta": bool(annual_volatility > 0.35),
+        "momentum_alcista": bool(momentum_20d is not None and momentum_20d > 0.05),
+        "momentum_bajista": bool(momentum_20d is not None and momentum_20d < -0.05),
+        "rentabilidad_negativa": bool(total_return < 0),
     }
 
 
