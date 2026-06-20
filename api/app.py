@@ -33,6 +33,20 @@ VALID_RANKING_CRITERIA = {
     "sharpe_ratio",
     "sortino_ratio",
     "max_drawdown",
+    "momentum_20d",
+    "rsi_14",
+    "bollinger_score",
+}
+VALID_ALERT_METRICS = {
+    "precio_cierre",
+    "rentabilidad_acumulada",
+    "volatilidad_anual",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "max_drawdown",
+    "momentum_20d",
+    "rsi_14",
+    "bollinger_score",
 }
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -59,6 +73,14 @@ def normalize_period(period: str | None) -> str:
     return "1y"
 
 
+def safe_round(value: float | None, digits: int = 4) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (float, np.floating)) and np.isnan(value):
+        return None
+    return round(float(value), digits)
+
+
 def build_error_fund(ticker: str, message: str) -> dict:
     return {
         "ticker": ticker,
@@ -68,17 +90,24 @@ def build_error_fund(ticker: str, message: str) -> dict:
         "sharpe_ratio": None,
         "sortino_ratio": None,
         "max_drawdown": None,
+        "momentum_20d": None,
+        "rsi_14": None,
+        "sma_20": None,
+        "sma_50": None,
+        "cruce_medias_alcista": None,
+        "cruce_medias_bajista": None,
+        "bollinger_mid": None,
+        "bollinger_upper": None,
+        "bollinger_lower": None,
+        "bollinger_score": None,
+        "rsi_sobrecompra": None,
+        "rsi_sobreventa": None,
+        "volatilidad_alta": None,
+        "signals": [],
+        "comentarios_usuario": [],
         "observaciones": message,
         "error": True,
     }
-
-
-def safe_round(value: float | None, digits: int = 4) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, (float, np.floating)) and np.isnan(value):
-        return None
-    return round(float(value), digits)
 
 
 def download_history(ticker: str, period: str) -> pd.DataFrame:
@@ -109,6 +138,254 @@ def extract_close_prices(history: pd.DataFrame, ticker: str) -> pd.Series:
     if close_series.empty:
         raise ValueError("Yahoo Finance no devolvio cierres validos")
     return close_series
+
+
+# =========================
+# METRICAS TECNICAS - MARISA
+# =========================
+
+def calculate_rsi(close_prices: pd.Series, window: int = 14) -> float | None:
+    """
+    Calcula el RSI de 14 periodos.
+    """
+    if len(close_prices) < window + 1:
+        return None
+
+    delta = close_prices.diff()
+    gains = delta.clip(lower=0)
+    losses = -delta.clip(upper=0)
+
+    avg_gain = gains.rolling(window=window, min_periods=window).mean()
+    avg_loss = losses.rolling(window=window, min_periods=window).mean()
+
+    if avg_gain.empty or avg_loss.empty:
+        return None
+
+    last_gain = avg_gain.iloc[-1]
+    last_loss = avg_loss.iloc[-1]
+
+    if pd.isna(last_gain) or pd.isna(last_loss):
+        return None
+
+    if last_loss == 0:
+        return 100.0
+
+    rs = last_gain / last_loss
+    rsi = 100 - (100 / (1 + rs))
+    return float(rsi)
+
+
+def calculate_sma(close_prices: pd.Series, window: int) -> float | None:
+    """
+    Calcula una media movil simple.
+    """
+    if len(close_prices) < window:
+        return None
+
+    sma = close_prices.rolling(window=window).mean().iloc[-1]
+    if pd.isna(sma):
+        return None
+
+    return float(sma)
+
+
+def calculate_momentum(close_prices: pd.Series, window: int = 20) -> float | None:
+    """
+    Calcula el momentum a 20 sesiones.
+    """
+    if len(close_prices) < window + 1:
+        return None
+
+    momentum = (close_prices.iloc[-1] / close_prices.iloc[-(window + 1)]) - 1
+    return float(momentum)
+
+
+def calculate_bollinger(close_prices: pd.Series, window: int = 20) -> dict:
+    """
+    Calcula las bandas de Bollinger y un score entre 0 y 1
+    para indicar la posicion del precio actual dentro del rango.
+    """
+    if len(close_prices) < window:
+        return {
+            "bollinger_mid": None,
+            "bollinger_upper": None,
+            "bollinger_lower": None,
+            "bollinger_score": None,
+        }
+
+    rolling_mean = close_prices.rolling(window=window).mean()
+    rolling_std = close_prices.rolling(window=window).std(ddof=0)
+
+    mid = rolling_mean.iloc[-1]
+    std = rolling_std.iloc[-1]
+
+    if pd.isna(mid) or pd.isna(std):
+        return {
+            "bollinger_mid": None,
+            "bollinger_upper": None,
+            "bollinger_lower": None,
+            "bollinger_score": None,
+        }
+
+    upper = mid + 2 * std
+    lower = mid - 2 * std
+    current_price = float(close_prices.iloc[-1])
+
+    if upper == lower:
+        score = 0.5
+    else:
+        score = (current_price - float(lower)) / (float(upper) - float(lower))
+        score = max(0.0, min(1.0, score))
+
+    return {
+        "bollinger_mid": float(mid),
+        "bollinger_upper": float(upper),
+        "bollinger_lower": float(lower),
+        "bollinger_score": float(score),
+    }
+
+
+def build_signal_flags(
+    total_return: float,
+    annual_volatility: float,
+    momentum_20d: float | None,
+    rsi_14: float | None,
+    sma_20: float | None,
+    sma_50: float | None,
+) -> dict:
+    """
+    Genera señales booleanas a partir de las metricas tecnicas.
+    """
+    return {
+        "cruce_medias_alcista": (
+            sma_20 is not None and sma_50 is not None and sma_20 > sma_50
+        ),
+        "cruce_medias_bajista": (
+            sma_20 is not None and sma_50 is not None and sma_20 < sma_50
+        ),
+        "rsi_sobrecompra": (rsi_14 is not None and rsi_14 > 70),
+        "rsi_sobreventa": (rsi_14 is not None and rsi_14 < 30),
+        "volatilidad_alta": annual_volatility > 0.35,
+        "momentum_alcista": (momentum_20d is not None and momentum_20d > 0.05),
+        "momentum_bajista": (momentum_20d is not None and momentum_20d < -0.05),
+        "rentabilidad_negativa": total_return < 0,
+    }
+
+
+def build_signals_and_comments(
+    flags: dict,
+    bollinger_score: float | None,
+) -> tuple[list[str], list[str]]:
+    """
+    Devuelve:
+    - signals: etiquetas tecnicas reutilizables
+    - comentarios_usuario: mensajes legibles para interfaz o alertas
+    """
+    signals: list[str] = []
+    comentarios_usuario: list[str] = []
+
+    if flags["volatilidad_alta"]:
+        signals.append("volatilidad_alta")
+        comentarios_usuario.append("Accion con elevada volatilidad.")
+
+    if flags["momentum_alcista"]:
+        signals.append("momentum_alcista")
+        comentarios_usuario.append("La accion se encuentra en momento alcista.")
+    elif flags["momentum_bajista"]:
+        signals.append("momentum_bajista")
+        comentarios_usuario.append(
+            "La accion muestra perdida de impulso o momento bajista."
+        )
+
+    if flags["cruce_medias_alcista"]:
+        signals.append("cruce_medias_alcista")
+        comentarios_usuario.append(
+            "La media corta se situa por encima de la media larga."
+        )
+    elif flags["cruce_medias_bajista"]:
+        signals.append("cruce_medias_bajista")
+        comentarios_usuario.append(
+            "La media corta se situa por debajo de la media larga."
+        )
+
+    if flags["rsi_sobrecompra"]:
+        signals.append("rsi_sobrecompra")
+        comentarios_usuario.append("Posible situacion de sobrecompra.")
+    elif flags["rsi_sobreventa"]:
+        signals.append("rsi_sobreventa")
+        comentarios_usuario.append("Posible situacion de sobreventa.")
+
+    if bollinger_score is not None:
+        if bollinger_score >= 0.9:
+            signals.append("bollinger_cerca_banda_superior")
+            comentarios_usuario.append(
+                "El precio se situa cerca de la banda superior de Bollinger."
+            )
+        elif bollinger_score <= 0.1:
+            signals.append("bollinger_cerca_banda_inferior")
+            comentarios_usuario.append(
+                "El precio se situa cerca de la banda inferior de Bollinger."
+            )
+
+    if flags["rentabilidad_negativa"]:
+        signals.append("rentabilidad_negativa")
+        comentarios_usuario.append(
+            "El activo acumula rentabilidad negativa en el periodo analizado."
+        )
+
+    if not comentarios_usuario:
+        comentarios_usuario.append(
+            "Comportamiento sin senales tecnicas destacadas en el periodo analizado."
+        )
+
+    return signals, comentarios_usuario
+
+
+def calculate_technical_metrics(
+    close_prices: pd.Series,
+    total_return: float,
+    annual_volatility: float,
+) -> dict:
+    """
+    Funcion principal que agrupa todas las metricas tecnicas adicionales.
+    """
+    momentum_20d = calculate_momentum(close_prices, window=20)
+    rsi_14 = calculate_rsi(close_prices, window=14)
+    sma_20 = calculate_sma(close_prices, window=20)
+    sma_50 = calculate_sma(close_prices, window=50)
+    bollinger_data = calculate_bollinger(close_prices, window=20)
+
+    flags = build_signal_flags(
+        total_return=total_return,
+        annual_volatility=annual_volatility,
+        momentum_20d=momentum_20d,
+        rsi_14=rsi_14,
+        sma_20=sma_20,
+        sma_50=sma_50,
+    )
+
+    signals, comentarios_usuario = build_signals_and_comments(
+        flags=flags,
+        bollinger_score=bollinger_data["bollinger_score"],
+    )
+
+    return {
+        "momentum_20d": safe_round(momentum_20d),
+        "rsi_14": safe_round(rsi_14, 2),
+        "sma_20": safe_round(sma_20, 2),
+        "sma_50": safe_round(sma_50, 2),
+        "cruce_medias_alcista": flags["cruce_medias_alcista"],
+        "cruce_medias_bajista": flags["cruce_medias_bajista"],
+        "bollinger_mid": safe_round(bollinger_data["bollinger_mid"], 2),
+        "bollinger_upper": safe_round(bollinger_data["bollinger_upper"], 2),
+        "bollinger_lower": safe_round(bollinger_data["bollinger_lower"], 2),
+        "bollinger_score": safe_round(bollinger_data["bollinger_score"]),
+        "rsi_sobrecompra": flags["rsi_sobrecompra"],
+        "rsi_sobreventa": flags["rsi_sobreventa"],
+        "volatilidad_alta": flags["volatilidad_alta"],
+        "signals": signals,
+        "comentarios_usuario": comentarios_usuario,
+    }
 
 
 def calculate_metrics(ticker: str, period: str) -> dict:
@@ -145,9 +422,24 @@ def calculate_metrics(ticker: str, period: str) -> dict:
             annualized_return / downside_volatility if downside_volatility > 0 else None
         )
 
+        # Integracion de metricas tecnicas adicionales
+        technical_metrics = calculate_technical_metrics(
+            close_prices=close_prices,
+            total_return=total_return,
+            annual_volatility=annual_volatility,
+        )
+
         notes = [f"Metricas calculadas con {len(close_prices)} cierres diarios"]
+
         if downside_volatility == 0:
             notes.append("Sortino limitado por ausencia de retornos negativos")
+
+        if technical_metrics["sma_50"] is None:
+            notes.append(
+                "No hay suficientes datos para calcular algunas metricas de ventana larga."
+            )
+
+        notes.extend(technical_metrics["comentarios_usuario"])
 
         return {
             "ticker": ticker,
@@ -157,6 +449,7 @@ def calculate_metrics(ticker: str, period: str) -> dict:
             "sharpe_ratio": safe_round(sharpe_ratio),
             "sortino_ratio": safe_round(sortino_ratio),
             "max_drawdown": safe_round(max_drawdown),
+            **technical_metrics,
             "observaciones": " | ".join(notes),
             "error": False,
         }
@@ -295,6 +588,19 @@ def create_alert() -> object:
     if payload["condicion"] not in {">", "<"}:
         return jsonify({"error": "La condicion debe ser > o <"}), 400
 
+    metric_name = str(payload["metrica"])
+
+    if metric_name not in VALID_ALERT_METRICS:
+        return (
+            jsonify(
+                {
+                    "error": "Metrica no valida",
+                    "metricas_permitidas": sorted(VALID_ALERT_METRICS),
+                }
+            ),
+            400,
+        )
+
     try:
         threshold = float(payload["umbral"])
     except (TypeError, ValueError):
@@ -306,7 +612,7 @@ def create_alert() -> object:
     alert = {
         "id": next_alert_id,
         "ticker": str(payload["ticker"]).upper(),
-        "metrica": str(payload["metrica"]),
+        "metrica": metric_name,
         "condicion": str(payload["condicion"]),
         "umbral": threshold,
         "creada_en": utc_now_iso(),
@@ -332,6 +638,14 @@ def telegram_summary() -> object:
         {
             "status": "prepared",
             "message": "Integracion con Telegram preparada para fase posterior",
+            "metricas_recomendadas_para_alertas": [
+                "volatilidad_anual",
+                "sharpe_ratio",
+                "max_drawdown",
+                "momentum_20d",
+                "rsi_14",
+                "bollinger_score",
+            ],
         }
     )
 
