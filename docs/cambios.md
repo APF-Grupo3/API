@@ -41,3 +41,5 @@ creación de botón de suscripción y funcionalidad de flujo resumen diario
 creo que podríamos hacer otras tabs (ventanas como en el html del profesor)
 por ejemplo una de gráficas o algo para que no aparezca únicmante una página
 
+
+
