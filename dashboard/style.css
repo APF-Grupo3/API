@@ -138,16 +138,6 @@ td {
   gap: 6px;
 }
 
-.telegram-sub-btn {
-  padding: 8px 14px;
-  font-size: 0.82em;
-}
-
-.telegram-sub-btn .telegram-icon {
-  width: 14px;
-  height: 14px;
-}
-
 .telegram-icon {
   display: inline-flex;
   width: 18px;
