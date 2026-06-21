@@ -81,7 +81,7 @@ numpy>=1.26.0
 
 ## 2. Workflows de n8n
 
-### 2.1 Vinculación Telegram (`docs/n8n/workflow_vinculacion_telegram.json`)
+### 2.1 Vinculación Telegram (`integraciones/n8n/workflow_vinculacion_telegram.json`)
 
 Flujo:
 1. **Telegram Trigger** — escucha mensajes entrantes del bot
@@ -91,7 +91,7 @@ Flujo:
 5. **IF 200** — si la respuesta es exitosa, Flask envía el mensaje de bienvenida directamente
 6. **Error** — si falla, notifica al usuario por Telegram
 
-### 2.2 Resumen diario por usuario (`docs/n8n/workflow_resumen_diario_por_usuario.json`)
+### 2.2 Resumen diario por usuario (`integraciones/n8n/workflow_resumen_diario_por_usuario.json`)
 
 Flujo:
 1. **Schedule Trigger** — se ejecuta a las 9:00 L-V
@@ -213,7 +213,7 @@ Clases CSS añadidas:
 | `dashboard/style.css`    | Estilos perfil, modal, selector multi-selección, dropdown, tags         |
 | `dashboard/app.js`       | Sesión, perfil, Telegram, selector ETFs, favoritos, alertas con sesión  |
 | `dashboard/auth.js`      | Guarda cliente en sessionStorage tras login                             |
-| `docs/n8n/*.json`        | Workflows de vinculación y resumen diario                               |
+| `integraciones/n8n/*.json`| Workflows de vinculación y resumen diario                               |
 
 ---
 

@@ -15,7 +15,7 @@ por ejemplo una de gráficas o algo para que no aparezca únicmante una página
 me falta crear el flujo de las alertas:
 - primero revisar que la alerta se guarda por usuario
 - que alertas se puede crear más de 1 (pasa lo mismo que con tickers, en cuanto añades otra alerta sobreescribe la anterior) Por lo menos dejar crear 5 alertas con diversos periodos..
-- 1 cada cuanto tiempo vamos a calcular las métricas en el back para enviar las alertas. (para empezar 3 veces al día)
+- 1 cada cuanto tiempo vamos a calcular las métricas en el back para enviar las alertas. (para empezar 1 vez al día?)
 - por qué medio se va a enviar la notificación: mail o telegram o las dos?
 - se va a realizar por n8n? o mediante webhooks por código
 - faltaria añadir a la alerta el periodo con el que se compara
