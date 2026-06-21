@@ -277,6 +277,101 @@ La documentación interactiva está disponible en `/docs` (Swagger UI) una vez d
 | **Beta** | Sensibilidad respecto al S&P 500 | ✅ |
 | **Correlación** | Correlación entre fondos para análisis de diversificación | — |
 
+## Métricas Técnicas Incorporadas
+
+Además de las métricas financieras tradicionales, la API incorpora un módulo de análisis técnico que amplía las capacidades de evaluación de activos.
+
+### CAGR (Compound Annual Growth Rate)
+
+Permite estimar la rentabilidad anual compuesta obtenida por el activo durante el periodo analizado.
+
+### Momentum (20 sesiones)
+
+Calcula la variación porcentual del precio durante las últimas 20 sesiones bursátiles.
+
+Interpretación:
+
+* Momentum positivo → Impulso alcista.
+* Momentum negativo → Impulso bajista.
+
+### RSI (Relative Strength Index)
+
+Calculado sobre una ventana de 14 sesiones utilizando el método de Wilder.
+
+Interpretación:
+
+* RSI > 70 → Posible sobrecompra.
+* RSI < 30 → Posible sobreventa.
+
+### Medias Móviles
+
+Se calculan:
+
+* SMA20 (Media móvil simple de 20 sesiones).
+* SMA50 (Media móvil simple de 50 sesiones).
+
+Adicionalmente se calcula la distancia porcentual respecto a la SMA50:
+
+Distancia SMA50 = (Precio Actual / SMA50) - 1
+
+### Bandas de Bollinger
+
+Las Bandas de Bollinger se calculan utilizando los precios de cierre ajustados del activo.
+
+Se emplea:
+
+* SMA20.
+* Desviación estándar de 20 sesiones.
+* Dos desviaciones estándar.
+
+Banda Superior = SMA20 + (2 × Desviación Estándar)
+
+Banda Inferior = SMA20 - (2 × Desviación Estándar)
+
+La API devuelve:
+
+* Bollinger Upper.
+* Bollinger Mid.
+* Bollinger Lower.
+
+### Bollinger Score
+
+Se incorpora un indicador adicional denominado Bollinger Score, que mide la posición relativa del precio dentro del canal de Bollinger.
+
+Bollinger Score =
+(Precio Actual - Banda Inferior)
+/
+(Banda Superior - Banda Inferior)
+
+Interpretación:
+
+* 0 → Precio situado en la banda inferior.
+* 0.5 → Centro del canal.
+* 1 → Precio situado en la banda superior.
+
+### Métricas de Volumen
+
+Se calculan:
+
+* Volumen actual.
+* Volumen medio de 20 sesiones.
+* Indicador de volumen superior a la media.
+
+### Señales Técnicas Generadas
+
+La API genera automáticamente señales interpretativas:
+
+* Cruce alcista de medias.
+* Cruce bajista de medias.
+* RSI en sobrecompra.
+* RSI en sobreventa.
+* Momentum alcista.
+* Momentum bajista.
+* Volatilidad elevada.
+* Rentabilidad negativa.
+
+Estas señales se devuelven junto con comentarios interpretativos para facilitar la toma de decisiones por parte del usuario.
+
 ---
 
 ## 🤖 Alertas por Telegram
