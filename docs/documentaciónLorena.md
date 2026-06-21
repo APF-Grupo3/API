@@ -117,16 +117,49 @@ docker run -it -p 5678:5678 \
 - Puerto: 5678
 - `WEBHOOK_URL` necesario para que n8n acepte webhooks por HTTPS
 
-### 3.2 ngrok
+### 3.2 ngrok (túnel para n8n / Telegram)
 
 ```bash
-ngrok http 5678
+ngrok http --url=puzzling-series-theater.ngrok-free.dev 5678
 ```
 
 - Dominio estático: `puzzling-series-theater.ngrok-free.dev`
 - Redirige tráfico HTTPS al puerto 5678 (n8n)
+- Necesario para que Telegram envíe los updates del bot a n8n
 
-### 3.3 Bot de Telegram
+### 3.3 Flask (servidor local)
+
+```bash
+python api/app.py
+```
+
+- Puerto: 5000
+- Escucha en `0.0.0.0` (accesible desde la red local)
+- Acceso local: `http://localhost:5000/dashboard/`
+- Acceso desde otro PC en misma red: `http://TU_IP_LOCAL:5000/dashboard/`
+
+### 3.4 Exponer Flask a compañeros (localhost.run)
+
+Si los compañeros NO están en la misma red WiFi, se usa un túnel SSH gratuito:
+
+```bash
+ssh -R 80:127.0.0.1:5000 nokey@localhost.run
+```
+
+- Genera una URL pública temporal (tipo `https://xxxx.lhr.life`)
+- Redirige todo el tráfico a tu Flask local (puerto 5000)
+- Se accede a `https://xxxx.lhr.life/dashboard/auth`
+
+### 3.5 Resumen de comandos para lanzar todo
+
+| Paso | Terminal | Comando | Qué hace |
+|------|----------|---------|----------|
+| 1 | docker | `docker run -it -p 5678:5678 -e WEBHOOK_URL=https://puzzling-series-theater.ngrok-free.dev -v n8n_data:/home/node/.n8n n8nio/n8n` | Lanza n8n |
+| 2 | ngrok | `ngrok http --url=puzzling-series-theater.ngrok-free.dev 5678` | Expone n8n a internet (Telegram) |
+| 3 | flask | `python api/app.py` | Lanza la API + dashboard |
+| 4 | ssh (opcional) | `ssh -R 80:127.0.0.1:5000 nokey@localhost.run` | Expone Flask a compañeros remotos |
+
+### 3.6 Bot de Telegram
 
 - Token: configurado en `.env` como `TELEGRAM_BOT_TOKEN`
 - Flujo deep link: `t.me/{bot_username}?start={token_64_hex}`
