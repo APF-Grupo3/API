@@ -32,6 +32,8 @@ class Cliente(db.Model):
     telegram_linked_at = db.Column(db.DateTime, nullable=True)
     # ETFs a los que quiere suscribirse para recibir alertas
     telegram_tickers = db.Column(db.String(500), nullable=True)
+    # Suscripción al resumen diario por Telegram
+    telegram_suscrito = db.Column(db.Boolean, default=False, nullable=False)
     # ETFs favoritos del usuario (separados por comas)
     etfs_favoritos = db.Column(db.String(2000), nullable=True)
 
@@ -57,6 +59,7 @@ class Cliente(db.Model):
             "telefono": self.telefono,
             "activo": self.activo,
             "telegram_vinculado": self.telegram_chat_id is not None,
+            "telegram_suscrito": bool(self.telegram_suscrito),
             "telegram_tickers": self.telegram_tickers,
             "etfs_favoritos": [t.strip() for t in self.etfs_favoritos.split(",") if t.strip()] if self.etfs_favoritos else [],
             "fecha_registro": self.fecha_registro.isoformat()

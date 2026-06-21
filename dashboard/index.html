@@ -31,12 +31,28 @@
             </span>
             Vincular Telegram
           </button>
-          <button id="telegramButton" class="telegram-button" type="button" hidden>
-            <span class="telegram-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
-            </span>
-            Enviar resumen por Telegram
-          </button>
+          <div class="telegram-group" id="telegramGroup" hidden>
+            <button id="telegramButton" class="telegram-button" type="button">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Enviar resumen por Telegram
+            </button>
+            <button id="subscribeButton" class="telegram-button telegram-subscribe telegram-sub-btn" type="button" hidden
+              title="Suscríbete para recibir cada día un resumen de tus ETFs favoritos por Telegram">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Suscripción diaria
+            </button>
+            <button id="unsubscribeButton" class="telegram-button telegram-unsubscribe telegram-sub-btn" type="button" hidden
+              title="Anula tu suscripción diaria de resúmenes por Telegram">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Anular suscripción
+            </button>
+          </div>
 
           <!-- Icono de perfil de usuario -->
           <div class="user-profile-wrapper" id="userProfileWrapper" hidden>

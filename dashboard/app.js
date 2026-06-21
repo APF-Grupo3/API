@@ -45,6 +45,9 @@ const elements = {
   alertsList: document.getElementById("alertsList"),
   telegramButton: document.getElementById("telegramButton"),
   telegramLinkButton: document.getElementById("telegramLinkButton"),
+  telegramGroup: document.getElementById("telegramGroup"),
+  subscribeButton: document.getElementById("subscribeButton"),
+  unsubscribeButton: document.getElementById("unsubscribeButton"),
   userProfileWrapper: document.getElementById("userProfileWrapper"),
   userProfileButton: document.getElementById("userProfileButton"),
   userProfilePanel: document.getElementById("userProfilePanel"),
@@ -421,11 +424,21 @@ function applyProfile() {
 
   // Mostrar SOLO el botón que corresponda según BD
   if (state.cliente.telegram_vinculado) {
-    elements.telegramButton.hidden = false;
+    elements.telegramGroup.hidden = false;
     elements.telegramLinkButton.hidden = true;
+    // Suscripción: mostrar según estado
+    if (state.cliente.telegram_suscrito) {
+      elements.subscribeButton.hidden = true;
+      elements.unsubscribeButton.hidden = false;
+    } else {
+      elements.subscribeButton.hidden = false;
+      elements.unsubscribeButton.hidden = true;
+    }
   } else {
-    elements.telegramButton.hidden = true;
+    elements.telegramGroup.hidden = true;
     elements.telegramLinkButton.hidden = false;
+    elements.subscribeButton.hidden = true;
+    elements.unsubscribeButton.hidden = true;
   }
 }
 
@@ -759,6 +772,31 @@ elements.alertsList.addEventListener("click", async (event) => {
 });
 
 elements.telegramButton.addEventListener("click", sendTelegramSummary);
+
+// ── Suscripción diaria ──
+async function toggleSubscription(suscribir) {
+  if (!state.cliente) return;
+  try {
+    const response = await fetch("/api/v1/telegram/suscripcion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cliente_id: state.cliente.id, suscribir }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setFeedback(data.mensaje, "success");
+      // Refrescar estado desde BD para que los botones reflejen el cambio real
+      await renderProfile();
+    } else {
+      setFeedback(data.error || "Error al cambiar suscripción", "error");
+    }
+  } catch {
+    setFeedback("No se pudo cambiar la suscripción.", "error");
+  }
+}
+
+elements.subscribeButton.addEventListener("click", () => toggleSubscription(true));
+elements.unsubscribeButton.addEventListener("click", () => toggleSubscription(false));
 
 // ── Init ──
 (async () => {

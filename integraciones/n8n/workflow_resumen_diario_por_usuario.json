@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "http://localhost:5000/api/v1/telegram/usuarios-suscritos",
+        "url": "http://host.docker.internal:5000/api/v1/telegram/usuarios-suscritos",
         "options": {}
       },
       "id": "e5f6a7b8-0005-0005-0005-000000000002",
@@ -41,7 +41,7 @@
     },
     {
       "parameters": {
-        "url": "http://localhost:5000/api/v1/comparar",
+        "url": "http://host.docker.internal:5000/api/v1/comparar",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [

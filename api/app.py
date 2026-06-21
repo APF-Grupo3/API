@@ -1066,6 +1066,39 @@ def telegram_set_tickers() -> object:
     })
 
 
+@app.route("/api/v1/telegram/suscripcion", methods=["POST"])
+def telegram_toggle_subscription() -> object:
+    """Activa o desactiva la suscripción diaria de resúmenes por Telegram.
+
+    Body JSON:
+        cliente_id (int): ID del cliente.
+        suscribir  (bool): True para suscribirse, False para darse de baja.
+    """
+    payload = request.get_json(silent=True) or {}
+    cliente_id = payload.get("cliente_id")
+    suscribir = payload.get("suscribir")
+
+    if not cliente_id or suscribir is None:
+        return jsonify({"error": "Faltan campos obligatorios (cliente_id, suscribir)"}), 400
+
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    if not cliente.telegram_chat_id:
+        return jsonify({"error": "Vincula primero tu cuenta de Telegram"}), 400
+
+    cliente.telegram_suscrito = bool(suscribir)
+    db.session.commit()
+
+    estado = "suscrito" if cliente.telegram_suscrito else "no suscrito"
+    return jsonify({
+        "status": "ok",
+        "telegram_suscrito": cliente.telegram_suscrito,
+        "mensaje": f"Ahora estás {estado} al resumen diario por Telegram.",
+    })
+
+
 @app.route("/api/v1/telegram/usuarios-suscritos")
 def telegram_subscribed_users() -> object:
     """Devuelve la lista de usuarios con Telegram vinculado y sus tickers.
@@ -1076,7 +1109,11 @@ def telegram_subscribed_users() -> object:
     clientes = Cliente.query.filter(
         Cliente.telegram_chat_id.isnot(None),
         Cliente.activo.is_(True),
-        Cliente.telegram_tickers.isnot(None),
+        Cliente.telegram_suscrito.is_(True),
+        db.or_(
+            Cliente.telegram_tickers.isnot(None),
+            Cliente.etfs_favoritos.isnot(None),
+        ),
     ).all()
 
     return jsonify({
@@ -1086,7 +1123,7 @@ def telegram_subscribed_users() -> object:
                 "cliente_id": c.id,
                 "nombre": c.nombre,
                 "chat_id": c.telegram_chat_id,
-                "tickers": c.telegram_tickers,
+                "tickers": c.telegram_tickers or c.etfs_favoritos,
             }
             for c in clientes
         ],
