@@ -1,0 +1,160 @@
+{
+  "name": "FundCompare - Vinculacion Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000001",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "fundcompare-telegram-trigger",
+      "credentials": {
+        "telegramApi": {
+          "id": "REEMPLAZAR_CON_ID_CREDENCIAL",
+          "name": "FundCompare Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-is-start",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start ",
+              "operator": { "type": "string", "operation": "startsWith" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000002",
+      "name": "Es comando /start con token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrae el token del mensaje /start TOKEN y el chat_id del remitente\nconst message = $input.first().json.message;\nconst text = message.text || '';\nconst parts = text.split(' ');\nconst token = parts.length > 1 ? parts[1].trim() : '';\nconst chatId = String(message.chat.id);\nconst firstName = message.from.first_name || '';\n\nreturn [{ json: { token, chat_id: chatId, nombre_telegram: firstName } }];"
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000003",
+      "name": "Extraer token y chat_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 220]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:5000/api/v1/telegram/vincular",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "token", "value": "={{ $json.token }}" },
+            { "name": "chat_id", "value": "={{ $json.chat_id }}" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000004",
+      "name": "Vincular en Flask",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-link-ok",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000005",
+      "name": "Vinculacion exitosa?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Extraer token y chat_id').item.json.chat_id }}",
+        "text": "⚠️ No se pudo vincular tu cuenta.\n\nPosibles causas:\n• El enlace ha expirado (dura 15 min)\n• Ya está vinculado a otra cuenta\n• Token no válido\n\nPide un nuevo enlace desde la plataforma.",
+        "additionalFields": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000006",
+      "name": "Notificar error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1340, 340],
+      "credentials": {
+        "telegramApi": {
+          "id": "REEMPLAZAR_CON_ID_CREDENCIAL",
+          "name": "FundCompare Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [{ "node": "Es comando /start con token?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Es comando /start con token?": {
+      "main": [
+        [{ "node": "Extraer token y chat_id", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Extraer token y chat_id": {
+      "main": [
+        [{ "node": "Vincular en Flask", "type": "main", "index": 0 }]
+      ]
+    },
+    "Vincular en Flask": {
+      "main": [
+        [{ "node": "Vinculacion exitosa?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Vinculacion exitosa?": {
+      "main": [
+        [],
+        [{ "node": "Notificar error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
