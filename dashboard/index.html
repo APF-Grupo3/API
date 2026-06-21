@@ -23,16 +23,54 @@
             Yahoo Finance · Metricas cuantitativas · Alertas
           </p>
         </div>
-        <button id="telegramButton" class="telegram-button" type="button">
-          <span class="telegram-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path
-                d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"
-              />
-            </svg>
-          </span>
-          Enviar resumen por Telegram
-        </button>
+        <div class="hero-actions">
+          <!-- Telegram: se muestra vincular o enviar según estado -->
+          <button id="telegramLinkButton" class="telegram-button telegram-link" type="button" hidden>
+            <span class="telegram-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+            </span>
+            Vincular Telegram
+          </button>
+          <div class="telegram-group" id="telegramGroup" hidden>
+            <button id="telegramButton" class="telegram-button" type="button">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Enviar resumen por Telegram
+            </button>
+            <button id="subscribeButton" class="telegram-button telegram-subscribe" type="button" hidden
+              title="Suscríbete para recibir cada día un resumen de tus ETFs favoritos por Telegram">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Suscripción diaria
+            </button>
+            <button id="unsubscribeButton" class="telegram-button telegram-unsubscribe" type="button" hidden
+              title="Anula tu suscripción diaria de resúmenes por Telegram">
+              <span class="telegram-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M21.4 4.6 18.2 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.7-7.8c.4-.3-.1-.5-.6-.2L6.3 13 1.8 11.6c-1-.3-1-.9.2-1.4L20 3.3c.9-.3 1.7.2 1.4 1.3Z"/></svg>
+              </span>
+              Anular suscripción
+            </button>
+          </div>
+
+          <!-- Icono de perfil de usuario -->
+          <div class="user-profile-wrapper" id="userProfileWrapper" hidden>
+            <button id="userProfileButton" class="user-profile-button" type="button" title="Mi perfil">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </button>
+            <div id="userProfilePanel" class="user-profile-panel" hidden>
+              <h3>Mi cuenta</h3>
+              <div class="profile-field"><span>Nombre</span><strong id="profileName">-</strong></div>
+              <div class="profile-field"><span>Email</span><strong id="profileEmail">-</strong></div>
+              <div class="profile-field"><span>País</span><strong id="profileCountry">-</strong></div>
+              <div class="profile-field"><span>Teléfono</span><strong id="profilePhone">-</strong></div>
+              <div class="profile-field"><span>Telegram</span><strong id="profileTelegram">-</strong></div>
+              <hr/>
+              <button id="logoutButton" class="logout-button" type="button">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <section class="stats-grid">
@@ -65,29 +103,36 @@
 
           <form id="compareForm" class="compare-form">
             <label>
-              <span>Tickers</span>
-              <input
-                id="tickersInput"
-                name="tickers"
-                type="text"
-                value="SPY, QQQ, IWM"
-                placeholder="SPY, QQQ, IWM"
-              />
+              <span>Tickers — selecciona tus activos</span>
+              <div class="etf-select-wrapper" id="etfSelectWrapper">
+                <input
+                  id="etfSearchInput"
+                  type="text"
+                  placeholder="Buscar ETF o acción por ticker o nombre..."
+                  autocomplete="off"
+                />
+                <div class="etf-dropdown" id="etfDropdown" hidden></div>
+              </div>
+              <div class="etf-selected-tags" id="etfSelectedTags"></div>
+              <input id="tickersInput" name="tickers" type="hidden" value="SPY, QQQ, IWM" />
             </label>
 
-            <label>
-              <span>Periodo</span>
-              <select id="periodInput" name="periodo">
-                <option value="1mo">1 mes</option>
-                <option value="3mo">3 meses</option>
-                <option value="6mo">6 meses</option>
-                <option value="1y" selected>1 año</option>
-                <option value="2y">2 años</option>
-                <option value="5y">5 años</option>
-              </select>
-            </label>
+            <div class="form-row">
+              <label>
+                <span>Periodo</span>
+                <select id="periodInput" name="periodo">
+                  <option value="1mo">1 mes</option>
+                  <option value="3mo">3 meses</option>
+                  <option value="6mo">6 meses</option>
+                  <option value="1y" selected>1 año</option>
+                  <option value="2y">2 años</option>
+                  <option value="5y">5 años</option>
+                </select>
+              </label>
 
-            <button class="primary-button" type="submit">Comparar activos</button>
+              <button class="primary-button" type="submit">Comparar activos</button>
+              <button class="secondary-button" type="button" id="saveFavoritesBtn" title="Guardar selección como favoritos">★ Guardar favoritos</button>
+            </div>
           </form>
 
           <p id="feedbackMessage" class="feedback" aria-live="polite"></p>
@@ -140,7 +185,7 @@
           <div class="panel-head">
             <div>
               <h2>Alertas</h2>
-              <p>Guardadas temporalmente en memoria.</p>
+              <p>Máximo 5 alertas por usuario. Se comprueban diariamente al cierre.</p>
             </div>
           </div>
           <form id="alertForm" class="alert-form">
@@ -163,6 +208,15 @@
               placeholder="Umbral"
               required
             />
+            <select id="alertPeriod" required>
+              <option value="1d">1 día</option>
+              <option value="5d">5 días</option>
+              <option value="1wk">1 semana</option>
+              <option value="1mo" selected>1 mes</option>
+              <option value="3mo">3 meses</option>
+              <option value="6mo">6 meses</option>
+              <option value="1y">1 año</option>
+            </select>
             <button class="secondary-button" type="submit">Crear alerta</button>
           </form>
           <ul id="alertsList" class="alerts-list"></ul>

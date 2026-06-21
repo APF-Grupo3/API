@@ -1,0 +1,40 @@
+# Registro de auditoría
+class AuditLog(db.Model):
+    """Modelo de registro de auditoría
+    
+    Registra todos los cambios importantes en el sistema.
+    
+    Campos importantes:
+        accion: created, updated, deleted
+        usuario: Email o ID del usuario
+        ip_address: IP desde donde se hizo la acción
+        datos_anteriores: Estado antes del cambio (JSON)
+        datos_nuevos: Estado después del cambio (JSON)
+    """
+    __tablename__ = 'audit_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'))
+    
+    accion = db.Column(db.String(50), nullable=False)
+    usuario = db.Column(db.String(100))
+    ip_address = db.Column(db.String(50))
+    
+    datos_anteriores = db.Column(db.JSON)
+    datos_nuevos = db.Column(db.JSON)
+    
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'transaction_id': self.transaction_id,
+            'accion': self.accion,
+            'usuario': self.usuario,
+            'ip_address': self.ip_address,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'datos_anteriores': self.datos_anteriores,
+            'datos_nuevos': self.datos_nuevos
+        }
+
+print("✓ Modelo AuditLog definido correctamente")
