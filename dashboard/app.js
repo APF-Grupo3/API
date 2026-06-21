@@ -342,7 +342,7 @@ async function loadAlerts() {
         (alert) => `
           <li class="alert-item">
             <div class="alert-copy">
-              <strong>${alert.ticker}</strong> · ${alert.metrica} ${alert.condicion} ${alert.umbral}
+              <strong>${alert.ticker}</strong> · ${alert.metrica} ${alert.condicion} ${alert.umbral} · ${alert.periodo || "1mo"}
             </div>
             <button class="delete-button" type="button" data-alert-id="${alert.id}">
               Eliminar
@@ -365,6 +365,7 @@ async function createAlert(event) {
     metrica: document.getElementById("alertMetric").value,
     condicion: document.getElementById("alertCondition").value,
     umbral: Number(document.getElementById("alertThreshold").value),
+    periodo: document.getElementById("alertPeriod").value,
   };
 
   try {

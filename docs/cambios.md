@@ -8,18 +8,36 @@ que se puedan seleccionar más de 3 activos
 corrección para que las alertas se guarden en la base de datos y no se pierdan al reiniciar el servidor 
 creación de botón de suscripción y funcionalidad de flujo resumen diario
 
+### Cambios 21/06/2026
+
+**Suscripción diaria por Telegram:**
+- Nueva columna `telegram_suscrito` (boolean) en la tabla `clientes`
+- Botón "Suscripción diaria" (verde) visible cuando Telegram está vinculado y no suscrito
+- Botón "Anular suscripción" (rojo) visible cuando ya está suscrito
+- Endpoint `POST /api/v1/telegram/suscripcion` para activar/desactivar
+- El estado se refresca desde BD al hacer clic (sin problemas de refresh)
+
+**Flujo resumen diario (n8n) confirmado:**
+- Endpoint `GET /api/v1/telegram/usuarios-suscritos` ahora filtra por `telegram_suscrito = True`
+- Usa `etfs_favoritos` como fallback si `telegram_tickers` es NULL
+- Workflow n8n con `host.docker.internal` (no localhost)
+- No necesitó cambios en el workflow, solo en el backend
+
+**Sistema de alertas completo:**
+- Máximo 5 alertas por usuario (validación en backend)
+- Nueva columna `periodo` en alertas (1d, 5d, 1wk, 1mo, 3mo, 6mo, 1y)
+- Selector de periodo en el formulario del dashboard
+- Endpoint `GET /api/v1/alertas/comprobar` — calcula métricas de cada alerta con su periodo y devuelve las disparadas con chat_id del usuario
+- Workflow n8n `workflow_verificacion_alertas.json` — se ejecuta a las 22h L-V (cierre), envía mensaje individual por Telegram a cada usuario cuya alerta se dispare
+- Nueva tabla `alertas_log` — registra cada alerta disparada (alerta_id, cliente_id, ticker, metrica, condicion, umbral, valor_actual, periodo, fecha)
+
+**Organización:**
+- Carpeta `n8n` movida de `docs/` a `integraciones/n8n/`
+- Referencias actualizadas en documentaciónLorena.md
 
 
 - cambios pendientes que  me gustaría implementar:
 
 creo que podríamos hacer otras tabs (ventanas como en el html del profesor)
 por ejemplo una de gráficas o algo para que no aparezca únicmante una página
-
-me falta crear el flujo de las alertas:
-- primero revisar que la alerta se guarda por usuario
-- que alertas se puede crear más de 1 (pasa lo mismo que con tickers, en cuanto añades otra alerta sobreescribe la anterior) Por lo menos dejar crear 5 alertas con diversos periodos..
-- 1 cada cuanto tiempo vamos a calcular las métricas en el back para enviar las alertas. (para empezar 1 vez al dia en la hora cierre)
-- enviar telegram si pasa la alerta
-- se va a realizar por n8n
-- faltaria añadir a la alerta el periodo (dias) con el que se compara, no es lo mismo sacar la alerta de datos de 1 año que de 1 mes que de 1 dia, 1 semana, dejamos el periodo en días etc...
 

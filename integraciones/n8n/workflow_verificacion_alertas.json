@@ -1,5 +1,5 @@
 {
-  "name": "FundCompare - Verificacion de Alertas",
+  "name": "FundCompare - Verificacion Alertas Cierre",
   "nodes": [
     {
       "parameters": {
@@ -7,28 +7,24 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 * * * 1-5"
+              "expression": "0 22 * * 1-5"
             }
           ]
         }
       },
-      "id": "b2c3d4e5-0002-0002-0002-000000000001",
-      "name": "Cada hora en dias laborables",
+      "id": "f6a7b8c9-0006-0006-0006-000000000001",
+      "name": "Lunes-Viernes a las 22h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [240, 300]
     },
     {
       "parameters": {
-        "url": "http://localhost:5000/api/v1/telegram/verificar-alertas",
-        "method": "POST",
-        "sendBody": true,
-        "contentType": "json",
-        "body": "={ \"enviar_notificaciones\": false }",
+        "url": "http://host.docker.internal:5000/api/v1/alertas/comprobar",
         "options": {}
       },
-      "id": "b2c3d4e5-0002-0002-0002-000000000002",
-      "name": "Verificar alertas",
+      "id": "f6a7b8c9-0006-0006-0006-000000000002",
+      "name": "Comprobar alertas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [460, 300]
@@ -43,8 +39,8 @@
           },
           "conditions": [
             {
-              "id": "cond-alertas-gt-0",
-              "leftValue": "={{ $json.alertas_disparadas }}",
+              "id": "cond-has-alerts",
+              "leftValue": "={{ $json.total_disparadas }}",
               "rightValue": 0,
               "operator": { "type": "number", "operation": "gt" }
             }
@@ -52,35 +48,45 @@
           "combinator": "and"
         }
       },
-      "id": "b2c3d4e5-0002-0002-0002-000000000003",
-      "name": "Hay alertas disparadas",
+      "id": "f6a7b8c9-0006-0006-0006-000000000003",
+      "name": "Hay alertas disparadas?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [680, 300]
     },
     {
       "parameters": {
-        "jsCode": "// Formatea las alertas disparadas en un mensaje Markdown para Telegram\nconst data = $input.first().json;\nconst detalle = data.detalle || [];\n\nconst fmtNum = v => v != null ? Number(v).toFixed(4) : 'N/A';\n\nconst lines = [\n  `🚨 *FundCompare · Alertas disparadas*`,\n  `Total activadas: ${data.alertas_disparadas}`,\n  ''\n];\n\nfor (const item of detalle) {\n  const a = item.alerta;\n  lines.push(`⚡ *${a.ticker}* · ${a.metrica} ${a.condicion} ${a.umbral}`);\n  lines.push(`  Valor actual: ${fmtNum(item.valor_actual)}`);\n  lines.push('');\n}\n\nreturn [{ json: { mensaje: lines.join('\\n') } }];"
+        "jsCode": "// Separa cada alerta disparada en un item individual\nconst data = $input.first().json;\nconst alertas = data.disparadas || [];\n\nreturn alertas.map(a => ({ json: a }));"
       },
-      "id": "b2c3d4e5-0002-0002-0002-000000000004",
-      "name": "Formatear alertas",
+      "id": "f6a7b8c9-0006-0006-0006-000000000004",
+      "name": "Separar alertas",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [900, 220]
     },
     {
       "parameters": {
-        "chatId": "={{ $vars.FUNDCOMPARE_CHAT_ID }}",
+        "jsCode": "// Formatea el mensaje de alerta para Telegram\nconst a = $input.first().json;\n\nconst fmtVal = v => v != null ? Number(v).toFixed(4) : 'N/A';\n\nconst condText = a.condicion === '>' ? 'ha superado' : 'ha caído por debajo de';\nconst emoji = a.condicion === '>' ? '🔺' : '🔻';\n\nconst lines = [\n  `${emoji} *ALERTA: ${a.ticker}*`,\n  '',\n  `📊 *${a.metrica}* ${condText} tu umbral`,\n  `  Valor actual: ${fmtVal(a.valor_actual)}`,\n  `  Umbral: ${fmtVal(a.umbral)} (${a.condicion})`,\n  `  Periodo: ${a.periodo}`,\n  '',\n  `_${new Date().toLocaleString('es-ES')}_`,\n];\n\nreturn [{ json: { mensaje: lines.join('\\n'), chat_id: a.chat_id } }];"
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000005",
+      "name": "Formatear mensaje alerta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
         "text": "={{ $json.mensaje }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
       },
-      "id": "b2c3d4e5-0002-0002-0002-000000000005",
-      "name": "Notificar por Telegram",
+      "id": "f6a7b8c9-0006-0006-0006-000000000006",
+      "name": "Enviar alerta por Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.1,
-      "position": [1120, 220],
+      "position": [1340, 220],
       "credentials": {
         "telegramApi": {
           "id": "REEMPLAZAR_CON_ID_CREDENCIAL",
@@ -90,25 +96,30 @@
     }
   ],
   "connections": {
-    "Cada hora en dias laborables": {
+    "Lunes-Viernes a las 22h": {
       "main": [
-        [{ "node": "Verificar alertas", "type": "main", "index": 0 }]
+        [{ "node": "Comprobar alertas", "type": "main", "index": 0 }]
       ]
     },
-    "Verificar alertas": {
+    "Comprobar alertas": {
       "main": [
-        [{ "node": "Hay alertas disparadas", "type": "main", "index": 0 }]
+        [{ "node": "Hay alertas disparadas?", "type": "main", "index": 0 }]
       ]
     },
-    "Hay alertas disparadas": {
+    "Hay alertas disparadas?": {
       "main": [
-        [{ "node": "Formatear alertas", "type": "main", "index": 0 }],
+        [{ "node": "Separar alertas", "type": "main", "index": 0 }],
         []
       ]
     },
-    "Formatear alertas": {
+    "Separar alertas": {
       "main": [
-        [{ "node": "Notificar por Telegram", "type": "main", "index": 0 }]
+        [{ "node": "Formatear mensaje alerta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Formatear mensaje alerta": {
+      "main": [
+        [{ "node": "Enviar alerta por Telegram", "type": "main", "index": 0 }]
       ]
     }
   },

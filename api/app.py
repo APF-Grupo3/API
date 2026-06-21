@@ -26,7 +26,7 @@ from flask_cors import CORS
 
 # --- base de datos y autenticación ---
 from configuracion import config
-from models import Alerta, Cliente, TelegramToken, db
+from models import Alerta, AlertaLog, Cliente, TelegramToken, db
 from auth import auth_bp
 
 
@@ -803,6 +803,11 @@ def create_alert() -> object:
     if not cliente_id:
         return jsonify({"error": "No autenticado"}), 401
 
+    # Límite de 5 alertas por usuario
+    num_alertas = Alerta.query.filter_by(cliente_id=cliente_id).count()
+    if num_alertas >= 5:
+        return jsonify({"error": "Máximo 5 alertas por usuario. Elimina alguna antes de crear otra."}), 400
+
     payload = request.get_json(silent=True) or {}
 
     required_fields = ("ticker", "metrica", "condicion", "umbral")
@@ -835,12 +840,19 @@ def create_alert() -> object:
     if not np.isfinite(threshold):
         return jsonify({"error": "El umbral debe ser numerico"}), 400
 
+    # Periodo válido (por defecto 1mo)
+    VALID_PERIODS = {"1d", "5d", "1wk", "1mo", "3mo", "6mo", "1y"}
+    periodo = payload.get("periodo", "1mo")
+    if periodo not in VALID_PERIODS:
+        periodo = "1mo"
+
     alerta = Alerta(
         cliente_id=cliente_id,
         ticker=str(payload["ticker"]).upper(),
         metrica=metric_name,
         condicion=str(payload["condicion"]),
         umbral=threshold,
+        periodo=periodo,
     )
     db.session.add(alerta)
     db.session.commit()
@@ -861,6 +873,79 @@ def delete_alert(alert_id: int) -> object:
     db.session.delete(alerta)
     db.session.commit()
     return jsonify({"status": "deleted", "alerta": alerta.to_dict()})
+
+
+@app.route("/api/v1/alertas/comprobar")
+def check_alerts() -> object:
+    """Comprueba todas las alertas activas y devuelve las que se han disparado.
+
+    Este endpoint es para que n8n lo llame al cierre del mercado.
+    Para cada alerta calcula la métrica con su periodo y compara contra el umbral.
+    Solo devuelve alertas disparadas con el chat_id del usuario para enviar por Telegram.
+    """
+    alertas = (
+        db.session.query(Alerta, Cliente)
+        .join(Cliente, Alerta.cliente_id == Cliente.id)
+        .filter(
+            Cliente.activo.is_(True),
+            Cliente.telegram_chat_id.isnot(None),
+        )
+        .all()
+    )
+
+    disparadas = []
+
+    for alerta, cliente in alertas:
+        try:
+            metrics = calculate_metrics(alerta.ticker, alerta.periodo)
+            if metrics.get("error"):
+                continue
+
+            valor_actual = metrics.get(alerta.metrica)
+            if valor_actual is None:
+                continue
+
+            triggered = False
+            if alerta.condicion == ">" and valor_actual > alerta.umbral:
+                triggered = True
+            elif alerta.condicion == "<" and valor_actual < alerta.umbral:
+                triggered = True
+
+            if triggered:
+                disparadas.append({
+                    "alerta_id": alerta.id,
+                    "cliente_id": cliente.id,
+                    "nombre": cliente.nombre,
+                    "chat_id": cliente.telegram_chat_id,
+                    "ticker": alerta.ticker,
+                    "metrica": alerta.metrica,
+                    "condicion": alerta.condicion,
+                    "umbral": alerta.umbral,
+                    "valor_actual": valor_actual,
+                    "periodo": alerta.periodo,
+                })
+                # Registrar en log de alertas
+                log = AlertaLog(
+                    alerta_id=alerta.id,
+                    cliente_id=cliente.id,
+                    ticker=alerta.ticker,
+                    metrica=alerta.metrica,
+                    condicion=alerta.condicion,
+                    umbral=alerta.umbral,
+                    valor_actual=valor_actual,
+                    periodo=alerta.periodo,
+                )
+                db.session.add(log)
+        except Exception:
+            continue
+
+    db.session.commit()
+
+    return jsonify({
+        "total_comprobadas": len(alertas),
+        "total_disparadas": len(disparadas),
+        "disparadas": disparadas,
+    })
 
 
 @app.route("/api/v1/telegram/estado")

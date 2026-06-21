@@ -125,6 +125,7 @@ class Alerta(db.Model):
     metrica = db.Column(db.String(50), nullable=False)
     condicion = db.Column(db.String(2), nullable=False)
     umbral = db.Column(db.Float, nullable=False)
+    periodo = db.Column(db.String(10), nullable=False, default="1mo")
     creada_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     cliente = db.relationship("Cliente", backref=db.backref("alertas", lazy=True))
@@ -136,5 +137,39 @@ class Alerta(db.Model):
             "metrica": self.metrica,
             "condicion": self.condicion,
             "umbral": self.umbral,
+            "periodo": self.periodo,
             "creada_en": self.creada_en.isoformat() if self.creada_en else None,
+        }
+
+
+class AlertaLog(db.Model):
+    """Registro histórico de alertas disparadas y notificadas."""
+    __tablename__ = "alertas_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    alerta_id = db.Column(db.Integer, db.ForeignKey("alertas.id"), nullable=False)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    ticker = db.Column(db.String(20), nullable=False)
+    metrica = db.Column(db.String(50), nullable=False)
+    condicion = db.Column(db.String(2), nullable=False)
+    umbral = db.Column(db.Float, nullable=False)
+    valor_actual = db.Column(db.Float, nullable=False)
+    periodo = db.Column(db.String(10), nullable=False)
+    disparada_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    alerta = db.relationship("Alerta", backref=db.backref("logs", lazy=True))
+    cliente = db.relationship("Cliente", backref=db.backref("alertas_log", lazy=True))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "alerta_id": self.alerta_id,
+            "cliente_id": self.cliente_id,
+            "ticker": self.ticker,
+            "metrica": self.metrica,
+            "condicion": self.condicion,
+            "umbral": self.umbral,
+            "valor_actual": self.valor_actual,
+            "periodo": self.periodo,
+            "disparada_en": self.disparada_en.isoformat() if self.disparada_en else None,
         }

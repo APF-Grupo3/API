@@ -185,7 +185,7 @@
           <div class="panel-head">
             <div>
               <h2>Alertas</h2>
-              <p>Guardadas temporalmente en memoria.</p>
+              <p>Máximo 5 alertas por usuario. Se comprueban diariamente al cierre.</p>
             </div>
           </div>
           <form id="alertForm" class="alert-form">
@@ -208,6 +208,15 @@
               placeholder="Umbral"
               required
             />
+            <select id="alertPeriod" required>
+              <option value="1d">1 día</option>
+              <option value="5d">5 días</option>
+              <option value="1wk">1 semana</option>
+              <option value="1mo" selected>1 mes</option>
+              <option value="3mo">3 meses</option>
+              <option value="6mo">6 meses</option>
+              <option value="1y">1 año</option>
+            </select>
             <button class="secondary-button" type="submit">Crear alerta</button>
           </form>
           <ul id="alertsList" class="alerts-list"></ul>
