@@ -123,6 +123,13 @@ function renderComparisonTable(funds) {
             formatPercent,
             metricClass("drawdown", fund.max_drawdown)
           )}
+          ${buildMetricCell(fund.cagr, formatPercent)}
+          ${buildMetricCell(fund.momentum_20d, formatPercent)}
+          ${buildMetricCell(fund.rsi_14, formatNumber)}
+          ${buildMetricCell(fund.bollinger_score, formatNumber)}
+          ${buildMetricCell(fund.sma_20, formatNumber)}
+          ${buildMetricCell(fund.sma_50, formatNumber)}
+          ${buildMetricCell(fund.volumen_actual, formatNumber)}
         </tr>
       `;
     })
