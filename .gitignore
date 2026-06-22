@@ -4,5 +4,3 @@ instance/
 *.db
 .env
 .DS_Store
-.venv
-

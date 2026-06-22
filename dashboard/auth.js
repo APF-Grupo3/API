@@ -63,8 +63,6 @@ loginForm.addEventListener("submit", async (evento) => {
       return;
     }
     mostrarMensaje(`Bienvenido, ${datos.cliente.nombre}`, "success");
-    // Guardar datos del cliente en sessionStorage para el dashboard
-    sessionStorage.setItem("cliente", JSON.stringify(datos.cliente));
     // Sesión creada en el servidor: ya podemos pasar al dashboard.
     window.location.href = "/dashboard";
   } catch (error) {

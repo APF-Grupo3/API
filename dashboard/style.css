@@ -14,11 +14,6 @@
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
-/* Garantizar que [hidden] siempre oculte, sin importar display del selector */
-[hidden] {
-  display: none !important;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -122,22 +117,6 @@ td {
   box-shadow: 0 12px 24px rgba(31, 159, 245, 0.22);
 }
 
-.telegram-subscribe {
-  background: linear-gradient(135deg, #28a745, #218838);
-  box-shadow: 0 12px 24px rgba(40, 167, 69, 0.22);
-}
-
-.telegram-unsubscribe {
-  background: linear-gradient(135deg, #dc3545, #c82333);
-  box-shadow: 0 12px 24px rgba(220, 53, 69, 0.22);
-}
-
-.telegram-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .telegram-icon {
   display: inline-flex;
   width: 18px;
@@ -213,21 +192,8 @@ td {
 }
 
 .compare-form {
-  grid-template-columns: 1fr;
-  align-items: start;
-}
-
-.compare-form .form-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 14px;
+  grid-template-columns: 2fr 1fr auto;
   align-items: end;
-}
-
-.compare-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .compare-form label,
@@ -240,127 +206,6 @@ td {
   margin-bottom: 8px;
   font-size: 0.9rem;
   color: var(--muted);
-}
-
-/* ── ETF multi-select ── */
-.etf-select-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.etf-selected-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-  min-height: 0;
-}
-
-.etf-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  background: rgba(47, 128, 237, 0.18);
-  color: var(--accent-blue);
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.etf-tag-remove {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 0 2px;
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.etf-tag-remove:hover {
-  color: var(--danger);
-}
-
-.etf-tag-count {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--muted);
-  border-radius: 8px;
-  font-size: 0.78rem;
-}
-
-.etf-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 90;
-  max-height: 280px;
-  overflow-y: auto;
-  background: var(--panel-strong);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  margin-top: 4px;
-}
-
-.etf-dropdown-category {
-  padding: 8px 14px 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.etf-dropdown-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: background 0.15s;
-  gap: 8px;
-}
-
-.etf-dropdown-item:hover {
-  background: rgba(47, 128, 237, 0.1);
-}
-
-.etf-dropdown-item.selected {
-  background: rgba(57, 201, 128, 0.1);
-}
-
-.etf-dropdown-ticker {
-  font-weight: 700;
-  color: var(--text);
-  min-width: 55px;
-}
-
-.etf-dropdown-name {
-  flex: 1;
-  color: var(--muted);
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.etf-dropdown-check {
-  color: var(--success);
-  font-size: 1.1rem;
-  font-weight: 700;
-  min-width: 20px;
-  text-align: center;
-}
-
-.etf-dropdown-empty {
-  padding: 16px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.88rem;
 }
 
 input,
@@ -496,175 +341,11 @@ canvas {
   max-height: 310px;
 }
 
-/* ── Hero actions row ── */
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.telegram-link {
-  background: linear-gradient(135deg, #28a745, #20c997);
-  box-shadow: 0 12px 24px rgba(40, 167, 69, 0.22);
-}
-
-/* ── User profile ── */
-.user-profile-wrapper {
-  position: relative;
-}
-
-.user-profile-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  background: var(--panel-strong);
-  color: var(--muted);
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.user-profile-button:hover {
-  border-color: var(--accent-blue);
-  color: var(--text);
-}
-
-.user-profile-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: 100;
-  width: 280px;
-  padding: 20px;
-  background: var(--panel-strong);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-}
-
-.user-profile-panel h3 {
-  margin: 0 0 14px;
-  font-size: 1.05rem;
-}
-
-.profile-field {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.profile-field span {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-
-.profile-field strong {
-  font-size: 0.88rem;
-  text-align: right;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-profile-panel hr {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 12px 0;
-}
-
-.logout-button {
-  width: 100%;
-  padding: 10px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255, 107, 107, 0.12);
-  color: var(--danger);
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.logout-button:hover {
-  background: rgba(255, 107, 107, 0.25);
-}
-
-/* ── Telegram link modal ── */
-.telegram-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-}
-
-.telegram-modal {
-  width: min(420px, calc(100% - 32px));
-  padding: 28px;
-  background: var(--panel-strong);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
-  text-align: center;
-}
-
-.telegram-modal h3 {
-  margin: 0 0 12px;
-}
-
-.telegram-modal p {
-  color: var(--muted);
-  margin: 0 0 20px;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-.telegram-modal a {
-  display: inline-block;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #1f9ff5, #1e73d9);
-  color: #fff;
-  text-decoration: none;
-  border-radius: 14px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.telegram-modal a:hover {
-  opacity: 0.9;
-}
-
-.telegram-modal .modal-close {
-  display: block;
-  margin: 0 auto;
-  padding: 8px 16px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.telegram-modal .modal-timer {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
 @media (max-width: 980px) {
   .stats-grid,
   .dashboard-grid,
   .ranking-columns,
   .compare-form,
-  .compare-form .form-row,
   .alert-form {
     grid-template-columns: 1fr;
   }
@@ -672,9 +353,5 @@ canvas {
   .hero {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .hero-actions {
-    flex-wrap: wrap;
   }
 }
