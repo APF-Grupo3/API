@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FundCompare | Acceso</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h1 class="auth-title">FundCompare</h1>
+      <p class="auth-subtitle">Accede o crea tu cuenta para continuar</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-target="login-form" type="button">Iniciar sesión</button>
+        <button class="auth-tab" data-target="registro-form" type="button">Crear cuenta</button>
+      </div>
+
+      <div id="auth-mensaje" class="auth-mensaje" hidden></div>
+
+      <!-- Formulario de login -->
+      <form id="login-form" class="auth-form">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" required placeholder="tucorreo@ejemplo.com">
+
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" name="password" required placeholder="••••••••">
+
+        <button type="submit" class="auth-submit">Entrar</button>
+      </form>
+
+      <!-- Formulario de registro -->
+      <form id="registro-form" class="auth-form" hidden>
+        <label for="reg-nombre">Nombre</label>
+        <input type="text" id="reg-nombre" name="nombre" required placeholder="Tu nombre">
+
+        <label for="reg-apellido">Apellido</label>
+        <input type="text" id="reg-apellido" name="apellido" required placeholder="Tu apellido">
+
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" name="email" required placeholder="tucorreo@ejemplo.com">
+
+        <label for="reg-pais">País</label>
+        <input type="text" id="reg-pais" name="pais" required placeholder="País de residencia">
+
+        <label for="reg-telefono">Teléfono (opcional)</label>
+        <input type="tel" id="reg-telefono" name="telefono" placeholder="+34 600 000 000">
+
+        <label for="reg-password">Contraseña</label>
+        <input type="password" id="reg-password" name="password" required minlength="6" placeholder="Mínimo 6 caracteres">
+
+        <button type="submit" class="auth-submit">Crear cuenta</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>
