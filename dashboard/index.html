@@ -241,9 +241,67 @@
           </div>
           <canvas id="sharpeChart"></canvas>
         </section>
+        
+// Añadir los nuevos gráficos de métricas adicionales
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>CAGR</h2>
+              <p>Tasa de crecimiento anual compuesto.</p>
+            </div>
+          </div>
+          <canvas id="cagrChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Max Drawdown</h2>
+              <p>Mayor caída desde un máximo histórico.</p>
+            </div>
+          </div>
+          <canvas id="maxDrawdownChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Sortino Ratio</h2>
+              <p>Rentabilidad ajustada al riesgo bajista.</p>
+            </div>
+          </div>
+          <canvas id="sortinoChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Volatilidad anual</h2>
+              <p>Desviación estándar anualizada de los retornos.</p>
+            </div>
+          </div>
+          <canvas id="volatilityChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>RSI (14)</h2>
+              <p>Índice de fuerza relativa. Sobrecompra >70 · Sobreventa <30.</p>
+            </div>
+          </div>
+          <canvas id="rsiChart"></canvas>
+        </section>
       </main>
     </div>
 
+    
+=======
+      </main>
+    </div>
+
+>>>>>>> a9d9f421bb71c827b243bd59c063aafabae7e639
     <script src="/dashboard/app.js"></script>
   </body>
 </html>
