@@ -80,7 +80,8 @@ Desarrollar un sistema automatizado e integral para la comparación de fondos de
 - Programar tareas recurrentes con `APScheduler` para la actualización de datos sin intervención humana.
 - Implementar un bot de Telegram que notifique a usuarios suscritos cuando una métrica supera un umbral definido.
 - Exponer los resultados mediante una API REST documentada con OpenAPI/Swagger.
-- Ofrecer una interfaz web mínima (dashboard HTML) para visualizar comparaciones sin necesidad de cliente técnico.
+- Ofrecer una buena experiencia de usuario al entregar una interfaz web mínima (dashboard HTML) para visualizar comparaciones sin necesidad de cliente técnico.
+  
 
 ---
 
@@ -168,11 +169,11 @@ La base de datos es SQLite, gestionada con SQLAlchemy ORM. Contiene tres tablas 
 
 ### Tabla `usuarios`
 
-Almacena el `telegram_chat_id` de cada usuario para poder enviarle notificaciones directas. El registro se realiza mediante el comando `/start` del bot de Telegram, sin necesidad de formularios externos.
+Recibe información de los usuarios, como: Nombre, email y fecha de alta que junto con el`telegram_chat_id` de cada usuario permitirá enviar notificaciones directas a cada uno de ellos. El registro se realiza mediante el comando `/start` del bot de Telegram, sin necesidad de formularios externos.
 
 ### Tabla `alertas` (preferencias)
 
-Cada fila representa una preferencia de alerta de un usuario: qué ticker vigilar, qué métrica monitorizar, la condición (`>` o `<`) y el valor umbral. Ejemplos:
+El usuario tendrá la opción de marcar sus preferencias. En esta tabla cada fila representa una ella, entregando información de qué ticker vigilar, qué métrica monitorizar, la condición (`>` o `<`) y el valor umbral. Ejemplos:
 
 | usuario_id | ticker | metrica | condicion | umbral | descripción |
 |------------|--------|---------|-----------|--------|-------------|
@@ -182,14 +183,14 @@ Cada fila representa una preferencia de alerta de un usuario: qué ticker vigila
 
 ### Tabla `metricas_historico`
 
-Cada descarga del scheduler inserta una nueva fila por ticker, construyendo un histórico completo que permite analizar la evolución de las métricas a lo largo del tiempo.
+El registro histórico hecho por cada descarga del scheduler, insertando una nueva fila por ticker lo que permitirá la construcción de una base de datos que permitirá analizar la evolución de las métricas a lo largo del tiempo.
 
 ---
 
 ## ⚙️ Automatización de Procesos
 
-Este es el núcleo diferencial del proyecto: el sistema funciona de forma autónoma sin intervención manual.
-
+El presente proyecto es un sistema que funciona de forma autónoma y sin intervención humana.
+ 
 ### Scheduler — APScheduler
 
 Se utiliza `APScheduler` integrado en el propio proceso de FastAPI para ejecutar tareas programadas:
@@ -270,9 +271,9 @@ La documentación interactiva está disponible en `/docs` (Swagger UI) una vez d
 
 | Métrica | Descripción | Uso en alertas |
 |---------|-------------|----------------|
-| **Rentabilidad acumulada** | Retorno total en el período | ✅ |
-| **Volatilidad anualizada** | Desviación estándar de retornos anualizados | ✅ |
-| **Ratio de Sharpe** | Rentabilidad ajustada al riesgo vs. tasa libre de riesgo | ✅ |
+| **Rentabilidad acumulada** | Retorno total en el período: Ganancia Total obtenida en un período| ✅ |
+| **Volatilidad anualizada** | Desviación estándar de retornos anualizados: Nivel de variación(riesgo) de los retornos de un año | ✅ |
+| **Ratio de Sharpe** | Rentabilidad ajustada al riesgo vs. tasa libre de riesgo: Retorno obtenido por cada unidad de riesgo total | ✅ |
 | **Ratio de Sortino** | Variante del Sharpe penalizando solo volatilidad bajista | ✅ |
 | **Maximum Drawdown** | Pérdida máxima desde un máximo histórico | ✅ |
 | **Beta** | Sensibilidad respecto al S&P 500 | ✅ |
