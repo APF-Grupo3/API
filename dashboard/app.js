@@ -1,7 +1,6 @@
 const state = {
   returnsChart: null,
   sharpeChart: null,
-<<<<<<< HEAD
   cagrChart: null,
   maxDrawdownChart: null,
   sortinoChart: null,
@@ -16,11 +15,6 @@ const COLOR_WARNING = "rgba(244, 195, 93, 0.8)";
 const COLOR_NEGATIVE = "rgba(255, 107, 107, 0.8)";
 const COLOR_NEUTRAL = "rgba(47, 128, 237, 0.8)";
 
-=======
-  cliente: null, // usuario logueado (de sessionStorage)
-};
-
->>>>>>> a9d9f421bb71c827b243bd59c063aafabae7e639
 // ── Sesión ──
 function getSession() {
   try {
@@ -288,7 +282,7 @@ function renderCharts(funds) {
 
   destroyChart(state.returnsChart);
   destroyChart(state.sharpeChart);
-// Añadir las destrucciones de los otros gráficos si existen
+  // Añadir las destrucciones de los otros gráficos si existen
   destroyChart(state.cagrChart);
   destroyChart(state.maxDrawdownChart);
   destroyChart(state.sortinoChart);
@@ -311,7 +305,7 @@ function renderCharts(funds) {
     labels,
     validFunds.map((fund) => fund.sharpe_ratio ?? 0),
     validFunds.map((fund) => {
-// Mantener la misma lógica de colores que en la tabla
+      // Mantener la misma lógica de colores que en la tabla
       if ((fund.sharpe_ratio ?? -1) > 1) return COLOR_POSITIVE;
       if ((fund.sharpe_ratio ?? -1) >= 0) return COLOR_WARNING;
       return COLOR_NEGATIVE;
@@ -407,7 +401,7 @@ async function loadComparison() {
   } catch (error) {
     destroyChart(state.returnsChart);
     destroyChart(state.sharpeChart);
-// Añadir destrucción de los otros gráficos si existen
+    // Añadir destrucción de los otros gráficos si existen
     destroyChart(state.cagrChart);
     destroyChart(state.maxDrawdownChart);
     destroyChart(state.sortinoChart);
