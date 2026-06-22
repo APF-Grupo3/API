@@ -56,7 +56,8 @@ El sistema opera de forma **completamente autónoma**: descarga datos de mercado
 
 ### ¿Qué problema resuelve?
 
-La comparación manual de fondos implica visitar múltiples plataformas, copiar datos y calcular métricas a mano. FundCompare API automatiza este workflow completo:
+Actualmente, la mayoría de analistas e inversionistas deben consultar múltiples plataformas, extraer datos de forma individual y calcular métricas financieras de manera independiente, lo que implica un elevado consumo de tiempo en estas tareas operativas y un mayor riesgo de errores en la manipulación y procesamiento de la información. Adicionalmente, la falta de automatización limita la capacidad de monitorear de forma continua el comportamiento de los activos, dificultando la toma de decisiones oportunas ante cambios del mercado. En este contexto, la solución propuesta mediante FundCompare API aborda estas problemáticas al automatizar la obtención de datos, el cálculo de métricas y la generación de comparativos, incorporando mecanismos de detección de cambios y alertas en tiempo real. De esta manera, se optimiza el proceso de análisis financiero, se reduce el riesgo operativo y se mejora la eficiencia en la toma de decisiones basada en datos actualizados y consistentes.
+FundCompare API automatiza este workflow completo:
 
 ```
 Datos de mercado (yfinance) → Cálculo automático de métricas → Rankings 
@@ -69,7 +70,7 @@ Datos de mercado (yfinance) → Cálculo automático de métricas → Rankings
 
 ### Objetivo General
 
-Desarrollar un sistema automatizado e integral para la comparación de fondos de inversión y ETFs, que combine una API REST, una base de datos relacional, procesos programados y notificaciones proactivas, aplicando las herramientas del curso de Automatización de Procesos Financieros.
+Desarrollar un sistema automatizado e integral para la comparación de fondos de inversión y ETFs, que combine una API REST, una base de datos relacional, procesos programados y notificaciones proactivas, aplicando las herramientas del curso de Automatización de Procesos Financieros, con el fin de optimizar la recolección. procesamiento y análisis de datos financieros.
 
 ### Objetivos Específicos
 
