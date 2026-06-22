@@ -70,7 +70,7 @@ Datos de mercado (yfinance) → Cálculo automático de métricas → Rankings
 
 ### Objetivo General
 
-Desarrollar un sistema automatizado e integral para la comparación de fondos de inversión y ETFs, que combine una API REST, una base de datos relacional, procesos programados y notificaciones proactivas, aplicando las herramientas del curso de Automatización de Procesos Financieros, con el fin de optimizar la recolección. procesamientoy análisis de datos financieros.
+Desarrollar un sistema automatizado e integral para la comparación de fondos de inversión y ETFs, que combine una API REST, una base de datos relacional, procesos programados y notificaciones proactivas, aplicando las herramientas del curso de Automatización de Procesos Financieros, con el fin de optimizar la recolección. procesamiento y análisis de datos financieros.
 
 ### Objetivos Específicos
 
