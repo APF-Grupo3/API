@@ -271,8 +271,8 @@ La documentación interactiva está disponible en `/docs` (Swagger UI) una vez d
 
 | Métrica | Descripción | Uso en alertas |
 |---------|-------------|----------------|
-| **Rentabilidad acumulada** | Retorno total en el período: Ganancia Total obtenida en un perído| ✅ |
-| **Volatilidad anualizada** | Desviación estándar de retornos anualizados:Nivel de variación(riesgo) de los retornos de un año | ✅ |
+| **Rentabilidad acumulada** | Retorno total en el período: Ganancia Total obtenida en un período| ✅ |
+| **Volatilidad anualizada** | Desviación estándar de retornos anualizados: Nivel de variación(riesgo) de los retornos de un año | ✅ |
 | **Ratio de Sharpe** | Rentabilidad ajustada al riesgo vs. tasa libre de riesgo: Retorno obtenido por cada unidad de riesgo total | ✅ |
 | **Ratio de Sortino** | Variante del Sharpe penalizando solo volatilidad bajista | ✅ |
 | **Maximum Drawdown** | Pérdida máxima desde un máximo histórico | ✅ |
