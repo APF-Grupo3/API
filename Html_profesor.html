@@ -1,0 +1,4107 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Dashboard financiero - API</title>
+
+  <style>
+
+    * {
+
+      margin: 0;
+
+      padding: 0;
+
+      box-sizing: border-box;
+
+    }
+
+
+
+    :root {
+
+      --bg-primary: #f5f5f5;
+
+      --bg-secondary: #ffffff;
+
+      --bg-tertiary: #e0e0e0;
+
+      --text-primary: #212121;
+
+      --text-secondary: #616161;
+
+      --text-tertiary: #9e9e9e;
+
+      --border-color: #d0d0d0;
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+      --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+      --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
+
+      --hover-bg: #eeeeee;
+
+      --active-bg: #424242;
+
+      --active-text: #ffffff;
+
+      --radius: 8px;
+
+      --transition: all 0.3s ease;
+
+    }
+
+
+
+    body {
+
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+      background: var(--bg-primary);
+
+      color: var(--text-primary);
+
+      line-height: 1.6;
+
+    }
+
+
+
+    /* Header */
+
+    .header {
+
+      background: var(--bg-secondary);
+
+      border-bottom: 1px solid var(--border-color);
+
+      padding: 1.5rem 2rem;
+
+      box-shadow: var(--shadow-sm);
+
+      position: sticky;
+
+      top: 0;
+
+      z-index: 100;
+
+    }
+
+
+
+    .header-content {
+
+      max-width: 1400px;
+
+      margin: 0 auto;
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+    }
+
+
+
+    .header h1 {
+
+      font-size: 1.5rem;
+
+      font-weight: 600;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .api-status {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 0.5rem;
+
+      padding: 0.5rem 1rem;
+
+      background: var(--bg-tertiary);
+
+      border-radius: var(--radius);
+
+      font-size: 0.875rem;
+
+    }
+
+
+
+    .status-indicator {
+
+      width: 8px;
+
+      height: 8px;
+
+      border-radius: 50%;
+
+      background: #9e9e9e;
+
+    }
+
+
+
+    .status-indicator.connected {
+
+      background: #4caf50;
+
+      animation: pulse 2s infinite;
+
+    }
+
+
+
+    @keyframes pulse {
+
+      0%, 100% { opacity: 1; }
+
+      50% { opacity: 0.5; }
+
+    }
+
+
+
+    /* Container */
+
+    .container {
+
+      max-width: 1400px;
+
+      margin: 0 auto;
+
+      padding: 2rem;
+
+    }
+
+
+
+    /* Navigation */
+
+    .nav-container {
+
+      background: var(--bg-secondary);
+
+      border-radius: var(--radius);
+
+      padding: 1.5rem;
+
+      margin-bottom: 2rem;
+
+      box-shadow: var(--shadow-sm);
+
+    }
+
+
+
+    .nav-buttons {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+      gap: 1rem;
+
+    }
+
+
+
+    .nav-btn {
+
+      background: var(--bg-tertiary);
+
+      border: 2px solid transparent;
+
+      padding: 1rem 1.5rem;
+
+      border-radius: var(--radius);
+
+      cursor: pointer;
+
+      font-size: 1rem;
+
+      font-weight: 500;
+
+      color: var(--text-primary);
+
+      transition: var(--transition);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 0.5rem;
+
+      text-align: center;
+
+    }
+
+
+
+    .nav-btn:hover {
+
+      background: var(--hover-bg);
+
+      transform: translateY(-2px);
+
+      box-shadow: var(--shadow-md);
+
+    }
+
+
+
+    .nav-btn.active {
+
+      background: var(--active-bg);
+
+      color: var(--active-text);
+
+      border-color: var(--active-bg);
+
+    }
+
+
+
+    .nav-btn .icon {
+
+      font-size: 1.25rem;
+
+    }
+
+
+
+    /* Content */
+
+    .content {
+
+      background: var(--bg-secondary);
+
+      border-radius: var(--radius);
+
+      padding: 2rem;
+
+      box-shadow: var(--shadow-sm);
+
+      min-height: 500px;
+
+    }
+
+
+
+    .view {
+
+      display: none;
+
+    }
+
+
+
+    .view.active {
+
+      display: block;
+
+      animation: fadeIn 0.3s ease;
+
+    }
+
+
+
+    @keyframes fadeIn {
+
+      from { opacity: 0; transform: translateY(10px); }
+
+      to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    .view-header {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      margin-bottom: 2rem;
+
+      padding-bottom: 1rem;
+
+      border-bottom: 2px solid var(--border-color);
+
+    }
+
+
+
+    .view-title {
+
+      font-size: 1.75rem;
+
+      font-weight: 600;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .view-actions {
+
+      display: flex;
+
+      gap: 1rem;
+
+    }
+
+
+
+    /* Stats Cards */
+
+    .stats-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+
+      gap: 1.5rem;
+
+      margin-bottom: 2rem;
+
+    }
+
+
+
+    .stat-card {
+
+      background: var(--bg-tertiary);
+
+      padding: 1.5rem;
+
+      border-radius: var(--radius);
+
+      border-left: 4px solid var(--text-primary);
+
+    }
+
+
+
+    .stat-label {
+
+      font-size: 0.875rem;
+
+      color: var(--text-secondary);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.5px;
+
+      margin-bottom: 0.5rem;
+
+    }
+
+
+
+    .stat-value {
+
+      font-size: 2rem;
+
+      font-weight: 700;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .stat-change {
+
+      font-size: 0.875rem;
+
+      color: var(--text-tertiary);
+
+      margin-top: 0.5rem;
+
+    }
+
+
+
+    /* Table */
+
+    .table-container {
+
+      overflow-x: auto;
+
+      border-radius: var(--radius);
+
+      border: 1px solid var(--border-color);
+
+    }
+
+
+
+    table {
+
+      width: 100%;
+
+      border-collapse: collapse;
+
+      background: var(--bg-secondary);
+
+    }
+
+
+
+    thead {
+
+      background: var(--bg-tertiary);
+
+    }
+
+
+
+    th {
+
+      padding: 1rem;
+
+      text-align: left;
+
+      font-weight: 600;
+
+      font-size: 0.875rem;
+
+      color: var(--text-secondary);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.5px;
+
+      border-bottom: 2px solid var(--border-color);
+
+    }
+
+
+
+    td {
+
+      padding: 1rem;
+
+      border-bottom: 1px solid var(--border-color);
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    tbody tr {
+
+      transition: var(--transition);
+
+    }
+
+
+
+    tbody tr:hover {
+
+      background: var(--hover-bg);
+
+    }
+
+
+
+    tbody tr:last-child td {
+
+      border-bottom: none;
+
+    }
+
+
+
+    /* Buttons */
+
+    .btn {
+
+      padding: 0.75rem 1.5rem;
+
+      border-radius: var(--radius);
+
+      border: none;
+
+      font-size: 0.875rem;
+
+      font-weight: 500;
+
+      cursor: pointer;
+
+      transition: var(--transition);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 0.5rem;
+
+    }
+
+
+
+    .btn-primary {
+
+      background: var(--active-bg);
+
+      color: var(--active-text);
+
+    }
+
+
+
+    .btn-primary:hover {
+
+      background: #616161;
+
+      transform: translateY(-2px);
+
+      box-shadow: var(--shadow-md);
+
+    }
+
+
+
+    .btn-secondary {
+
+      background: var(--bg-tertiary);
+
+      color: var(--text-primary);
+
+      border: 1px solid var(--border-color);
+
+    }
+
+
+
+    .btn-secondary:hover {
+
+      background: var(--hover-bg);
+
+    }
+
+
+
+    /* Loading */
+
+    .loading {
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding: 3rem;
+
+      color: var(--text-secondary);
+
+    }
+
+
+
+    .spinner {
+
+      width: 40px;
+
+      height: 40px;
+
+      border: 3px solid var(--bg-tertiary);
+
+      border-top-color: var(--text-primary);
+
+      border-radius: 50%;
+
+      animation: spin 0.8s linear infinite;
+
+      margin-bottom: 1rem;
+
+    }
+
+
+
+    @keyframes spin {
+
+      to { transform: rotate(360deg); }
+
+    }
+
+
+
+    /* Empty State */
+
+    .empty-state {
+
+      text-align: center;
+
+      padding: 3rem;
+
+      color: var(--text-secondary);
+
+    }
+
+
+
+    .empty-state-icon {
+
+      font-size: 3rem;
+
+      margin-bottom: 1rem;
+
+      opacity: 0.3;
+
+    }
+
+
+
+    /* Badge */
+
+    .badge {
+
+      display: inline-block;
+
+      padding: 0.25rem 0.75rem;
+
+      border-radius: 12px;
+
+      font-size: 0.75rem;
+
+      font-weight: 500;
+
+      text-transform: uppercase;
+
+    }
+
+
+
+    .badge-active {
+
+      background: #424242;
+
+      color: #ffffff;
+
+    }
+
+
+
+    .badge-inactive {
+
+      background: #e0e0e0;
+
+      color: #616161;
+
+    }
+
+
+
+    .badge-success {
+
+      background: #616161;
+
+      color: #ffffff;
+
+    }
+
+
+
+    .badge-pending {
+
+      background: #bdbdbd;
+
+      color: #424242;
+
+    }
+
+
+
+    /* Chart Container */
+
+    .chart-container {
+
+      background: var(--bg-tertiary);
+
+      border-radius: var(--radius);
+
+      padding: 1.5rem;
+
+      margin-top: 2rem;
+
+      min-height: 300px;
+
+    }
+
+
+
+    .chart-title {
+
+      font-size: 1.125rem;
+
+      font-weight: 600;
+
+      margin-bottom: 1rem;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    /* Config Panel */
+
+    .config-panel {
+
+      background: var(--bg-tertiary);
+
+      border-radius: var(--radius);
+
+      padding: 1.5rem;
+
+      margin-bottom: 2rem;
+
+    }
+
+
+
+    .config-label {
+
+      display: block;
+
+      font-weight: 500;
+
+      margin-bottom: 0.5rem;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .config-input {
+
+      width: 100%;
+
+      padding: 0.75rem;
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--radius);
+
+      background: var(--bg-secondary);
+
+      color: var(--text-primary);
+
+      font-size: 0.875rem;
+
+    }
+
+
+
+    .config-input:focus {
+
+      outline: none;
+
+      border-color: var(--text-primary);
+
+    }
+
+
+
+    .config-row {
+
+      margin-bottom: 1rem;
+
+    }
+
+
+
+    /* Responsive */
+
+    @media (max-width: 768px) {
+
+      .container {
+
+        padding: 1rem;
+
+      }
+
+
+
+      .header {
+
+        padding: 1rem;
+
+      }
+
+
+
+      .nav-buttons {
+
+        grid-template-columns: 1fr;
+
+      }
+
+
+
+      .stats-grid {
+
+        grid-template-columns: 1fr;
+
+      }
+
+
+
+      .view-header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 1rem;
+
+      }
+
+
+
+      .view-actions {
+
+        width: 100%;
+
+        justify-content: flex-start;
+
+      }
+
+    }
+
+
+
+    /* Portfolio Specific Styles */
+
+    .customer-select {
+
+      padding: 0.75rem 1rem;
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--radius);
+
+      background: var(--bg-secondary);
+
+      color: var(--text-primary);
+
+      font-size: 1rem;
+
+      cursor: pointer;
+
+      min-width: 250px;
+
+      transition: var(--transition);
+
+    }
+
+
+
+    .customer-select:hover {
+
+      border-color: var(--text-primary);
+
+    }
+
+
+
+    .positive {
+
+      color: #2e7d32 !important;
+
+      font-weight: 600;
+
+    }
+
+
+
+    .negative {
+
+      color: #c62828 !important;
+
+      font-weight: 600;
+
+    }
+
+
+
+    .neutral {
+
+      color: var(--text-secondary);
+
+    }
+
+
+
+    .price-change {
+
+      padding: 0.25rem 0.5rem;
+
+      border-radius: 4px;
+
+      font-size: 0.875rem;
+
+      font-weight: 600;
+
+    }
+
+
+
+    .price-up {
+
+      background: #e8f5e9;
+
+      color: #2e7d32;
+
+    }
+
+
+
+    .price-down {
+
+      background: #ffebee;
+
+      color: #c62828;
+
+    }
+
+
+
+    .chart-title {
+
+      font-size: 1.1rem;
+
+      color: var(--text-primary);
+
+      margin-bottom: 1rem;
+
+      font-weight: 600;
+
+    }
+
+
+
+    .loading-row {
+
+      text-align: center;
+
+      padding: 2rem;
+
+      color: var(--text-secondary);
+
+    }
+
+
+
+    .action-btn {
+
+      padding: 0.5rem 1rem;
+
+      border: none;
+
+      border-radius: var(--radius);
+
+      cursor: pointer;
+
+      font-size: 0.875rem;
+
+      font-weight: 500;
+
+      transition: var(--transition);
+
+      margin: 0 0.25rem;
+
+    }
+
+
+
+    .action-btn.buy {
+
+      background: #4CAF50;
+
+      color: white;
+
+    }
+
+
+
+    .action-btn.buy:hover {
+
+      background: #45a049;
+
+    }
+
+
+
+    .action-btn.sell {
+
+      background: #f44336;
+
+      color: white;
+
+    }
+
+
+
+    .action-btn.sell:hover {
+
+      background: #da190b;
+
+    }
+
+
+
+    .empty-state {
+
+      text-align: center;
+
+      padding: 4rem 2rem;
+
+      color: var(--text-tertiary);
+
+    }
+
+
+
+    /* Modal Styles */
+
+    .modal {
+
+      display: none;
+
+      position: fixed;
+
+      top: 0;
+
+      left: 0;
+
+      width: 100%;
+
+      height: 100%;
+
+      background: rgba(0, 0, 0, 0.5);
+
+      z-index: 1000;
+
+      align-items: center;
+
+      justify-content: center;
+
+    }
+
+
+
+    .modal.active {
+
+      display: flex;
+
+    }
+
+
+
+    .modal-content {
+
+      background: var(--bg-secondary);
+
+      padding: 2rem;
+
+      border-radius: var(--radius);
+
+      box-shadow: var(--shadow-lg);
+
+      max-width: 500px;
+
+      width: 90%;
+
+    }
+
+
+
+    .modal-header {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      margin-bottom: 1.5rem;
+
+      padding-bottom: 1rem;
+
+      border-bottom: 2px solid var(--border-color);
+
+    }
+
+
+
+    .modal-title {
+
+      font-size: 1.5rem;
+
+      font-weight: 600;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .modal-close {
+
+      background: none;
+
+      border: none;
+
+      font-size: 1.5rem;
+
+      cursor: pointer;
+
+      color: var(--text-secondary);
+
+    }
+
+
+
+    .form-group {
+
+      margin-bottom: 1.5rem;
+
+    }
+
+
+
+    .form-label {
+
+      display: block;
+
+      margin-bottom: 0.5rem;
+
+      font-weight: 500;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .form-input {
+
+      width: 100%;
+
+      padding: 0.75rem;
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--radius);
+
+      font-size: 1rem;
+
+      background: var(--bg-secondary);
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    .form-input:focus {
+
+      outline: none;
+
+      border-color: var(--text-primary);
+
+    }
+
+
+
+    .form-actions {
+
+      display: flex;
+
+      gap: 1rem;
+
+      justify-content: flex-end;
+
+      margin-top: 2rem;
+
+    }
+
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+</head>
+
+<body>
+
+  <!-- Header -->
+
+  <div class="header">
+
+    <div class="header-content">
+
+      <h1>Dashboard financiero - API</h1>
+
+      <div class="api-status">
+
+        <div class="status-indicator" id="statusIndicator"></div>
+
+        <span id="statusText">Conectando...</span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- Main Container -->
+
+  <div class="container">
+
+    <!-- Navigation -->
+
+    <div class="nav-container">
+
+      <div class="nav-buttons">
+
+        <button class="nav-btn active" onclick="showView('overview')">
+
+          <span>Resumen general</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('customers')">
+
+          <span>Clientes</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('transactions')">
+
+          <span>Transacciones</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('portfolio')">
+
+          <span>Portfolio & Acciones</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('reports')">
+
+          <span>Reportes</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('integrations')">
+
+          <span>Integraciones</span>
+
+        </button>
+
+        <button class="nav-btn" onclick="showView('config')">
+
+          <span>Configuración</span>
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- Content Area -->
+
+    <div class="content">
+
+      <!-- Overview View -->
+
+      <div id="overviewView" class="view active">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Resumen general</h2>
+
+          <div class="view-actions">
+
+            <button class="btn btn-primary" onclick="refreshOverview()">
+
+              <span>Actualizar</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="stats-grid">
+
+          <div class="stat-card">
+
+            <div class="stat-label">Total clientes</div>
+
+            <div class="stat-value" id="totalCustomers">-</div>
+
+            <div class="stat-change" id="customersChange">Cargando...</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Transacciones hoy</div>
+
+            <div class="stat-value" id="todayTransactions">-</div>
+
+            <div class="stat-change" id="transactionsChange">Cargando...</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Total procesado</div>
+
+            <div class="stat-value" id="totalAmount">-</div>
+
+            <div class="stat-change" id="amountChange">Cargando...</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Estado de la API</div>
+
+            <div class="stat-value" id="apiHealth">-</div>
+
+            <div class="stat-change" id="apiUptime">Verificando...</div>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="chart-container">
+
+          <h3 class="chart-title">Actividad reciente</h3>
+
+          <div id="activityChart" class="loading">
+
+            <div class="spinner"></div>
+
+            <p>Cargando datos...</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Customers View -->
+
+      <div id="customersView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Gestión de clientes</h2>
+
+          <div class="view-actions">
+
+            <button class="btn btn-secondary" onclick="exportData('customers')">
+
+              <span>Exportar</span>
+
+            </button>
+
+            <button class="btn btn-primary" onclick="loadCustomers()">
+
+              <span>Recargar</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div id="customersContent" class="loading">
+
+          <div class="spinner"></div>
+
+          <p>Cargando clientes...</p>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Transactions View -->
+
+      <div id="transactionsView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Transacciones</h2>
+
+          <div class="view-actions">
+
+            <button class="btn btn-secondary" onclick="exportData('transactions')">
+
+              <span>Exportar</span>
+
+            </button>
+
+            <button class="btn btn-primary" onclick="loadTransactions()">
+
+              <span>Recargar</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div id="transactionsContent" class="loading">
+
+          <div class="spinner"></div>
+
+          <p>Cargando transacciones...</p>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Portfolio View -->
+
+      <div id="portfolioView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Portfolio & Acciones</h2>
+
+          <div class="view-actions">
+
+            <select id="customerSelect" class="customer-select" onchange="loadCustomerPortfolio()">
+
+              <option value="">Seleccionar cliente...</option>
+
+            </select>
+
+            <button class="btn btn-secondary" onclick="showPortfolioAnalysis()" style="margin-right: 0.5rem;">
+
+              <span>Análisis avanzado</span>
+
+            </button>
+
+            <button class="btn btn-primary" onclick="loadCustomerPortfolio()">
+
+              <span>Actualizar</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- Portfolio Analysis Panel (hidden by default) -->
+
+        <div id="portfolioAnalysisPanel" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+
+            <h3 style="margin: 0;">Análisis avanzado del portfolio</h3>
+
+            <button class="btn btn-secondary" onclick="hidePortfolioAnalysis()" style="padding: 0.5rem 1rem;">
+
+              <span>Cerrar</span>
+
+            </button>
+
+          </div>
+
+          <div id="analysisContent"></div>
+
+        </div>
+
+
+
+        <!-- Portfolio Summary -->
+
+        <div id="portfolioSummary" class="stats-grid" style="display: none;">
+
+          <div class="stat-card" style="border-left-color: #2196F3;">
+
+            <div class="stat-label">Valor total</div>
+
+            <div class="stat-value" id="portfolioValue">$0</div>
+
+          </div>
+
+          <div class="stat-card" style="border-left-color: #4CAF50;">
+
+            <div class="stat-label">Ganancia/Pérdida</div>
+
+            <div class="stat-value" id="portfolioGain">$0</div>
+
+            <div class="stat-change" id="portfolioGainPercent">0%</div>
+
+          </div>
+
+          <div class="stat-card" style="border-left-color: #FF9800;">
+
+            <div class="stat-label">Total posiciones</div>
+
+            <div class="stat-value" id="portfolioPositions">0</div>
+
+          </div>
+
+          <div class="stat-card" style="border-left-color: #9C27B0;">
+
+            <div class="stat-label">Costo total</div>
+
+            <div class="stat-value" id="portfolioCost">$0</div>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- Portfolio Chart -->
+
+        <div id="portfolioChartContainer" style="display: none; margin: 2rem 0;">
+
+          <h3 class="chart-title">Composición del portfolio</h3>
+
+          <canvas id="portfolioChart" style="max-height: 300px;"></canvas>
+
+        </div>
+
+
+
+        <!-- Portfolio Table -->
+
+        <div id="portfolioTableContainer" style="display: none;">
+
+          <h3 style="margin: 2rem 0 1rem 0; font-size: 1.25rem; color: var(--text-primary);">Posiciones actuales</h3>
+
+          <div class="table-container">
+
+            <table id="portfolioTable">
+
+              <thead>
+
+                <tr>
+
+                  <th>Símbolo</th>
+
+                  <th>Nombre</th>
+
+                  <th>Cantidad</th>
+
+                  <th>Precio compra</th>
+
+                  <th>Precio actual</th>
+
+                  <th>Valor actual</th>
+
+                  <th>Ganancia/Pérdida</th>
+
+                  <th>% Rendimiento</th>
+
+                  <th>Fecha compra</th>
+
+                  <th>Acciones</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody></tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- Stocks Section -->
+
+        <div style="margin-top: 3rem;">
+
+          <div class="view-header">
+
+            <h3 class="view-title" style="font-size: 1.5rem;">Acciones disponibles</h3>
+
+            <div class="view-actions">
+
+              <input type="text" id="stockSearch" placeholder="Buscar por símbolo o nombre..." style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); width: 300px;">
+
+              <button class="btn btn-secondary" onclick="loadStocks()">
+
+                <span>Buscar</span>
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+
+          <div id="stocksTableContainer" class="table-container">
+
+            <table id="stocksTable">
+
+              <thead>
+
+                <tr>
+
+                  <th>Símbolo</th>
+
+                  <th>Nombre</th>
+
+                  <th>Sector</th>
+
+                  <th>Precio actual</th>
+
+                  <th>Cambio</th>
+
+                  <th>% Cambio</th>
+
+                  <th>Volumen</th>
+
+                  <th>Mercado</th>
+
+                  <th>Acciones</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                <tr><td colspan="9" class="loading-row">Cargando acciones...</td></tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- Empty State -->
+
+        <div id="portfolioEmptyState" class="empty-state">
+
+          <p style="font-size: 1.1rem; color: var(--text-secondary);">Selecciona un cliente para ver su portfolio de acciones</p>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Reports View -->
+
+      <div id="reportsView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Reportes y análisis</h2>
+
+          <div class="view-actions">
+
+            <select id="reportType" class="btn" style="padding: 0.5rem 1rem; margin-right: 1rem;">
+
+              <option value="clientes">Clientes</option>
+
+              <option value="transacciones">Transacciones</option>
+
+              <option value="portfolio">Portfolio</option>
+
+            </select>
+
+            <button class="btn btn-secondary" onclick="exportData('current')" style="margin-right: 0.5rem;">
+
+              <span>Exportar CSV</span>
+
+            </button>
+
+            <button class="btn btn-primary" onclick="loadReport()">
+
+              <span>Cargar reporte</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div id="reportsContent" style="margin-top: 2rem;">
+
+          <div class="loading">
+
+            <div class="spinner"></div>
+
+            <p>Cargando reporte...</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Integrations View -->
+
+      <div id="integrationsView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Integraciones activas</h2>
+
+          <div class="view-actions">
+
+            <button class="btn btn-primary" onclick="loadWorkflows()">
+
+              <span>Actualizar</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="stats-grid">
+
+          <div class="stat-card">
+
+            <div class="stat-label">n8n</div>
+
+            <div class="stat-value" id="n8nCount">-</div>
+
+            <div class="stat-change">Workflows activos</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Make</div>
+
+            <div class="stat-value" id="makeCount">-</div>
+
+            <div class="stat-change">Escenarios configurados</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Zapier</div>
+
+            <div class="stat-value" id="zapierCount">-</div>
+
+            <div class="stat-change">Zaps conectados</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Total workflows</div>
+
+            <div class="stat-value" id="totalWorkflows">-</div>
+
+            <div class="stat-change">Todas las plataformas</div>
+
+          </div>
+
+        </div>
+
+
+
+        <div id="workflowsContent" class="table-container" style="margin-top: 2rem;">
+
+          <div class="loading">
+
+            <div class="spinner"></div>
+
+            <p>Cargando workflows...</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Config View -->
+
+      <div id="configView" class="view">
+
+        <div class="view-header">
+
+          <h2 class="view-title">Configuración de la API</h2>
+
+        </div>
+
+
+
+        <div class="config-panel">
+
+          <div class="config-row">
+
+            <label class="config-label">URL de la API</label>
+
+            <input type="text" class="config-input" id="apiUrl" value="http://localhost:5000/api" placeholder="http://localhost:5000/api">
+
+          </div>
+
+          <div class="config-row">
+
+            <label class="config-label">API Key</label>
+
+            <input type="password" class="config-input" id="apiKey" value="api_key_demo_12345" placeholder="Ingresa tu API key">
+
+          </div>
+
+          <div class="config-row">
+
+            <button class="btn btn-primary" onclick="saveConfig()">
+
+              <span>Guardar configuración</span>
+
+            </button>
+
+            <button class="btn btn-secondary" onclick="testConnection()" style="margin-left: 1rem;">
+
+              <span>Probar conexión</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="table-container">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>Endpoint</th>
+
+                <th>Método</th>
+
+                <th>Descripción</th>
+
+                <th>Estado</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              <tr>
+
+                <td>/api/health</td>
+
+                <td>GET</td>
+
+                <td>Verificar estado de la API</td>
+
+                <td><span class="badge badge-active">Activo</span></td>
+
+              </tr>
+
+              <tr>
+
+                <td>/api/customers</td>
+
+                <td>GET</td>
+
+                <td>Listar clientes</td>
+
+                <td><span class="badge badge-active">Activo</span></td>
+
+              </tr>
+
+              <tr>
+
+                <td>/api/transactions</td>
+
+                <td>GET</td>
+
+                <td>Listar transacciones</td>
+
+                <td><span class="badge badge-active">Activo</span></td>
+
+              </tr>
+
+              <tr>
+
+                <td>/api/reports/daily</td>
+
+                <td>GET</td>
+
+                <td>Reporte diario</td>
+
+                <td><span class="badge badge-active">Activo</span></td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    // Configuration
+
+    let config = {
+
+      apiUrl: 'http://localhost:5000/api',
+
+      apiKey: 'api_key_demo_12345'
+
+    };
+
+
+
+    // Load config from localStorage
+
+    function loadConfig() {
+
+      const saved = localStorage.getItem('apiConfig');
+
+      if (saved) {
+
+        config = JSON.parse(saved);
+
+        document.getElementById('apiUrl').value = config.apiUrl;
+
+        document.getElementById('apiKey').value = config.apiKey;
+
+      }
+
+    }
+
+
+
+    // Save configuration
+
+    function saveConfig() {
+
+      config.apiUrl = document.getElementById('apiUrl').value;
+
+      config.apiKey = document.getElementById('apiKey').value;
+
+      localStorage.setItem('apiConfig', JSON.stringify(config));
+
+      alert('✓ Configuración guardada correctamente');
+
+    }
+
+
+
+    // API Helper
+
+    async function apiCall(endpoint, method = 'GET', data = null) {
+
+      const options = {
+
+        method: method,
+
+        headers: {
+
+          'Content-Type': 'application/json',
+
+          'X-API-Key': config.apiKey
+
+        }
+
+      };
+
+
+
+      if (data) {
+
+        options.body = JSON.stringify(data);
+
+      }
+
+
+
+      try {
+
+        const response = await fetch(`${config.apiUrl}${endpoint}`, options);
+
+        if (!response.ok) {
+
+          throw new Error(`HTTP error! status: ${response.status}`);
+
+        }
+
+        return await response.json();
+
+      } catch (error) {
+
+        console.error('API Error:', error);
+
+        throw error;
+
+      }
+
+    }
+
+
+
+    // Test connection
+
+    async function testConnection() {
+
+      try {
+
+        updateStatus('connecting');
+
+        await apiCall('/health');
+
+        updateStatus('connected');
+
+        alert('✓ Conexión exitosa con la API');
+
+      } catch (error) {
+
+        updateStatus('disconnected');
+
+        alert('✗ Error de conexión: ' + error.message);
+
+      }
+
+    }
+
+
+
+    // Update connection status
+
+    function updateStatus(status) {
+
+      const indicator = document.getElementById('statusIndicator');
+
+      const text = document.getElementById('statusText');
+
+       
+
+      switch(status) {
+
+        case 'connected':
+
+          indicator.classList.add('connected');
+
+          text.textContent = 'Conectado';
+
+          break;
+
+        case 'connecting':
+
+          indicator.classList.remove('connected');
+
+          text.textContent = 'Conectando...';
+
+          break;
+
+        case 'disconnected':
+
+          indicator.classList.remove('connected');
+
+          text.textContent = 'Desconectado';
+
+          break;
+
+      }
+
+    }
+
+
+
+    // Show view
+
+    function showView(viewName) {
+
+      // Update nav buttons
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+
+        btn.classList.remove('active');
+
+      });
+
+      event.target.closest('.nav-btn').classList.add('active');
+
+
+
+      // Update views
+
+      document.querySelectorAll('.view').forEach(view => {
+
+        view.classList.remove('active');
+
+      });
+
+      document.getElementById(viewName + 'View').classList.add('active');
+
+
+
+      // Load data for view
+
+      switch(viewName) {
+
+        case 'overview':
+
+          refreshOverview();
+
+          break;
+
+        case 'customers':
+
+          loadCustomers();
+
+          break;
+
+        case 'transactions':
+
+          loadTransactions();
+
+          break;
+
+        case 'portfolio':
+
+          loadStocks();
+
+          break;
+
+      }
+
+    }
+
+
+
+    // Refresh overview
+
+    async function refreshOverview() {
+
+      try {
+
+        // Obtener estadísticas globales
+
+        const stats = await apiCall('/stats/global');
+
+        const data = stats.data;
+
+         
+
+        // Actualizar tarjetas de estadísticas
+
+        document.getElementById('totalCustomers').textContent = data.clientes.total;
+
+        document.getElementById('customersChange').textContent = `${data.clientes.activos} activos en ${data.clientes.por_pais.length} países`;
+
+
+
+        document.getElementById('todayTransactions').textContent = data.transacciones.total;
+
+        document.getElementById('transactionsChange').textContent = `${data.transacciones.completadas} completadas, ${data.transacciones.pendientes} pendientes`;
+
+
+
+        // Volumen total por moneda
+
+        if (data.transacciones.volumen_por_moneda.length > 0) {
+
+          const principales = data.transacciones.volumen_por_moneda.slice(0, 2);
+
+          const volumen = principales.map(v => `${v.moneda} ${v.total.toFixed(0)}`).join(' | ');
+
+          document.getElementById('totalAmount').textContent = volumen;
+
+          document.getElementById('amountChange').textContent = 'Volumen procesado';
+
+        } else {
+
+          document.getElementById('totalAmount').textContent = '-';
+
+          document.getElementById('amountChange').textContent = 'Sin transacciones completadas';
+
+        }
+
+
+
+        // Estado de la API
+
+        document.getElementById('apiHealth').textContent = 'Operativo';
+
+        document.getElementById('apiUptime').textContent = `Portfolio: ${data.portfolios.posiciones_activas} posiciones activas`;
+
+
+
+        updateStatus('connected');
+
+         
+
+        // Crear tabla de acciones más populares
+
+        let chartHTML = '<h4 style="margin-bottom: 15px;">Acciones más populares en portfolios</h4>';
+
+        chartHTML += '<div class="table-container"><table style="max-width: 800px;"><thead><tr>';
+
+        chartHTML += '<th>Símbolo</th><th>Nombre</th><th>Inversores</th><th>Total acciones</th>';
+
+        chartHTML += '</tr></thead><tbody>';
+
+         
+
+        data.portfolios.acciones_mas_populares.forEach(stock => {
+
+          chartHTML += `<tr>
+
+            <td><strong>${stock.simbolo}</strong></td>
+
+            <td>${stock.nombre}</td>
+
+            <td>${stock.inversores}</td>
+
+            <td>${stock.total_acciones.toLocaleString()}</td>
+
+          </tr>`;
+
+        });
+
+         
+
+        chartHTML += '</tbody></table></div>';
+
+         
+
+        // Distribución por país (top 5)
+
+        chartHTML += '<h4 style="margin-top: 30px; margin-bottom: 15px;">Distribución de clientes por país</h4>';
+
+        chartHTML += '<div class="table-container"><table style="max-width: 600px;"><thead><tr>';
+
+        chartHTML += '<th>País</th><th>Clientes</th><th>Porcentaje</th>';
+
+        chartHTML += '</tr></thead><tbody>';
+
+         
+
+        const topPaises = data.clientes.por_pais
+
+          .sort((a, b) => b.total - a.total)
+
+          .slice(0, 5);
+
+           
+
+        topPaises.forEach(pais => {
+
+          const porcentaje = ((pais.total / data.clientes.total) * 100).toFixed(1);
+
+          chartHTML += `<tr>
+
+            <td><strong>${pais.pais}</strong></td>
+
+            <td>${pais.total}</td>
+
+            <td>${porcentaje}%</td>
+
+          </tr>`;
+
+        });
+
+         
+
+        chartHTML += '</tbody></table></div>';
+
+         
+
+        document.getElementById('activityChart').innerHTML = chartHTML;
+
+         
+
+      } catch (error) {
+
+        console.error('Error loading overview:', error);
+
+        updateStatus('disconnected');
+
+        document.getElementById('totalCustomers').textContent = 'Error';
+
+        document.getElementById('todayTransactions').textContent = 'Error';
+
+        document.getElementById('totalAmount').textContent = 'Error';
+
+        document.getElementById('apiHealth').textContent = 'Error';
+
+        document.getElementById('activityChart').innerHTML = '<p style="text-align: center; color: red;">Error al cargar estadísticas</p>';
+
+      }
+
+    }
+
+
+
+    // Load customers
+
+    async function loadCustomers() {
+
+      const container = document.getElementById('customersContent');
+
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando clientes...</p></div>';
+
+
+
+      try {
+
+        const response = await apiCall('/customers?per_page=50');
+
+        const customers = response.data || [];
+
+
+
+        if (customers.length === 0) {
+
+          container.innerHTML = '<div class="empty-state"><p>No hay clientes registrados</p></div>';
+
+          return;
+
+        }
+
+
+
+        let html = '<div class="table-container"><table><thead><tr>';
+
+        html += '<th>ID</th><th>Nombre</th><th>Email</th><th>País</th><th>Estado</th><th>Registro</th>';
+
+        html += '</tr></thead><tbody>';
+
+
+
+        customers.forEach(customer => {
+
+          const statusBadge = customer.activo ? 
+
+            '<span class="badge badge-active">Activo</span>' : 
+
+            '<span class="badge badge-inactive">Inactivo</span>';
+
+           
+
+          html += `<tr>
+
+            <td>${customer.id}</td>
+
+            <td>${customer.nombre} ${customer.apellido || ''}</td>
+
+            <td>${customer.email}</td>
+
+            <td>${customer.pais || '-'}</td>
+
+            <td>${statusBadge}</td>
+
+            <td>${new Date(customer.fecha_registro).toLocaleDateString()}</td>
+
+          </tr>`;
+
+        });
+
+
+
+        html += '</tbody></table></div>';
+
+        container.innerHTML = html;
+
+      } catch (error) {
+
+        console.error('Error loading customers:', error);
+
+        container.innerHTML = '<div class="empty-state"><p>Error al cargar clientes: ' + error.message + '</p></div>';
+
+      }
+
+    }
+
+
+
+    // Load transactions
+
+    async function loadTransactions() {
+
+      const container = document.getElementById('transactionsContent');
+
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando transacciones...</p></div>';
+
+
+
+      try {
+
+        const response = await apiCall('/transactions?per_page=50');
+
+        const transactions = response.data || [];
+
+
+
+        if (transactions.length === 0) {
+
+          container.innerHTML = '<div class="empty-state"><p>No hay transacciones registradas</p></div>';
+
+          return;
+
+        }
+
+
+
+        let html = '<div class="table-container"><table><thead><tr>';
+
+        html += '<th>ID</th><th>Cliente ID</th><th>Monto</th><th>Tipo</th><th>Estado</th><th>Fecha</th>';
+
+        html += '</tr></thead><tbody>';
+
+
+
+        transactions.forEach(tx => {
+
+          const statusBadge = tx.estado === 'completado' ? 
+
+            '<span class="badge badge-success">Completado</span>' : 
+
+            '<span class="badge badge-pending">Pendiente</span>';
+
+           
+
+          html += `<tr>
+
+            <td>${tx.id}</td>
+
+            <td>${tx.customer_id}</td>
+
+            <td>€${parseFloat(tx.monto).toFixed(2)}</td>
+
+            <td>${tx.tipo}</td>
+
+            <td>${statusBadge}</td>
+
+            <td>${new Date(tx.fecha).toLocaleDateString()}</td>
+
+          </tr>`;
+
+        });
+
+
+
+        html += '</tbody></table></div>';
+
+        container.innerHTML = html;
+
+      } catch (error) {
+
+        console.error('Error loading transactions:', error);
+
+        container.innerHTML = '<div class="empty-state"><p>Error al cargar transacciones: ' + error.message + '</p></div>';
+
+      }
+
+    }
+
+
+
+    // Load workflows
+
+    async function loadWorkflows() {
+
+      const container = document.getElementById('workflowsContent');
+
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando workflows...</p></div>';
+
+
+
+      try {
+
+        const response = await apiCall('/workflows');
+
+        const data = response.data;
+
+         
+
+        // Actualizar contadores
+
+        document.getElementById('n8nCount').textContent = data.by_platform.n8n;
+
+        document.getElementById('makeCount').textContent = data.by_platform.make;
+
+        document.getElementById('zapierCount').textContent = data.by_platform.zapier;
+
+        document.getElementById('totalWorkflows').textContent = data.total;
+
+         
+
+        const workflows = data.workflows || [];
+
+
+
+        if (workflows.length === 0) {
+
+          container.innerHTML = '<div class="empty-state"><p>No hay workflows configurados</p></div>';
+
+          return;
+
+        }
+
+
+
+        let html = '<table><thead><tr>';
+
+        html += '<th>Plataforma</th><th>Nombre</th><th>Archivo</th><th>Detalles</th>';
+
+        html += '</tr></thead><tbody>';
+
+
+
+        workflows.forEach(wf => {
+
+          const platform = wf.platform.toUpperCase();
+
+          let detalles = wf.description || '-';
+
+           
+
+          if (wf.nodes) {
+
+            detalles = `${wf.nodes} nodos, ${wf.triggers} triggers`;
+
+            if (wf.description) {
+
+              detalles += ` - ${wf.description}`;
+
+            }
+
+          }
+
+           
+
+          html += `<tr>
+
+            <td><strong>${platform}</strong></td>
+
+            <td>${wf.name}</td>
+
+            <td><code style="font-size: 0.85em;">${wf.file}</code></td>
+
+            <td>${detalles}</td>
+
+          </tr>`;
+
+        });
+
+
+
+        html += '</tbody></table>';
+
+        container.innerHTML = html;
+
+      } catch (error) {
+
+        console.error('Error loading workflows:', error);
+
+        container.innerHTML = '<div class="empty-state"><p>Error al cargar workflows: ' + error.message + '</p></div>';
+
+      }
+
+    }
+
+
+
+    // Load reports
+
+    async function loadReport() {
+
+      const reportType = document.getElementById('reportType').value;
+
+      const container = document.getElementById('reportsContent');
+
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Generando reporte...</p></div>';
+
+
+
+      try {
+
+        let endpoint = '';
+
+        let title = '';
+
+         
+
+        switch(reportType) {
+
+          case 'clientes':
+
+            endpoint = '/reports/clientes';
+
+            title = 'Reporte de clientes';
+
+            break;
+
+          case 'transacciones':
+
+            endpoint = '/reports/transacciones?dias=30';
+
+            title = 'Reporte de transacciones (últimos 30 días)';
+
+            break;
+
+          case 'portfolio':
+
+            endpoint = '/reports/portfolio';
+
+            title = 'Reporte consolidado de portfolios';
+
+            break;
+
+        }
+
+         
+
+        const response = await apiCall(endpoint);
+
+        const data = response.data;
+
+         
+
+        displayReport(reportType, data, title);
+
+         
+
+      } catch (error) {
+
+        console.error('Error loading report:', error);
+
+        container.innerHTML = '<div class="empty-state"><p>Error al cargar reporte: ' + error.message + '</p></div>';
+
+      }
+
+    }
+
+
+
+    function displayReport(type, data, title) {
+
+      const container = document.getElementById('reportsContent');
+
+      let html = `<h3 style="margin-bottom: 1.5rem;">${title}</h3>`;
+
+       
+
+      if (type === 'clientes') {
+
+        html += '<div class="stats-grid" style="margin-bottom: 2rem;">';
+
+        html += `
+
+          <div class="stat-card">
+
+            <div class="stat-label">Total clientes</div>
+
+            <div class="stat-value">${data.total_general}</div>
+
+            <div class="stat-change">${data.activos_general} activos</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Nuevos (30 días)</div>
+
+            <div class="stat-value">${data.nuevos_ultimos_30_dias}</div>
+
+            <div class="stat-change">Registros recientes</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Países</div>
+
+            <div class="stat-value">${data.por_pais.length}</div>
+
+            <div class="stat-change">Distribución global</div>
+
+          </div>
+
+        `;
+
+        html += '</div>';
+
+         
+
+        html += '<h4 style="margin: 2rem 0 1rem 0;">Distribución por país</h4>';
+
+        html += '<div class="table-container"><table><thead><tr>';
+
+        html += '<th>País</th><th>Total</th><th>Activos</th><th>Porcentaje</th>';
+
+        html += '</tr></thead><tbody>';
+
+         
+
+        data.por_pais.sort((a, b) => b.total - a.total);
+
+        data.por_pais.forEach(p => {
+
+          const porcentaje = ((p.total / data.total_general) * 100).toFixed(1);
+
+          html += `<tr>
+
+            <td><strong>${p.pais}</strong></td>
+
+            <td>${p.total}</td>
+
+            <td>${p.activos}</td>
+
+            <td>${porcentaje}%</td>
+
+          </tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+      } else if (type === 'transacciones') {
+
+        html += '<div class="stats-grid" style="margin-bottom: 2rem;">';
+
+        const totalTrans = data.por_estado.reduce((sum, s) => sum + s.total, 0);
+
+        const totalVol = data.por_moneda.reduce((sum, m) => sum + m.volumen, 0);
+
+        html += `
+
+          <div class="stat-card">
+
+            <div class="stat-label">Total transacciones</div>
+
+            <div class="stat-value">${totalTrans}</div>
+
+            <div class="stat-change">Últimos ${data.periodo_dias} días</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Volumen total</div>
+
+            <div class="stat-value">$${totalVol.toFixed(0)}</div>
+
+            <div class="stat-change">Todas las monedas</div>
+
+          </div>
+
+        `;
+
+        html += '</div>';
+
+         
+
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-top: 2rem;">';
+
+         
+
+        // Por estado
+
+        html += '<div><h4>Por estado</h4><table style="width: 100%;"><thead><tr><th>Estado</th><th>Total</th></tr></thead><tbody>';
+
+        data.por_estado.forEach(s => {
+
+          html += `<tr><td>${s.estado}</td><td>${s.total}</td></tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+        // Por tipo
+
+        html += '<div><h4>Por tipo</h4><table style="width: 100%;"><thead><tr><th>Tipo</th><th>Total</th></tr></thead><tbody>';
+
+        data.por_tipo.forEach(t => {
+
+          html += `<tr><td>${t.tipo}</td><td>${t.total}</td></tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+        // Por moneda
+
+        html += '<div><h4>Por moneda</h4><table style="width: 100%;"><thead><tr><th>Moneda</th><th>Volumen</th></tr></thead><tbody>';
+
+        data.por_moneda.forEach(m => {
+
+          html += `<tr><td>${m.moneda}</td><td>$${m.volumen.toFixed(0)}</td></tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+        html += '</div>';
+
+         
+
+      } else if (type === 'portfolio') {
+
+        html += '<div class="stats-grid" style="margin-bottom: 2rem;">';
+
+        html += `
+
+          <div class="stat-card">
+
+            <div class="stat-label">Valor total mercado</div>
+
+            <div class="stat-value">$${data.resumen.valor_total_mercado.toLocaleString()}</div>
+
+            <div class="stat-change">${data.resumen.total_posiciones} posiciones</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Ganancia total</div>
+
+            <div class="stat-value" style="color: ${data.resumen.ganancia_total >= 0 ? 'green' : 'red'};">$${data.resumen.ganancia_total.toLocaleString()}</div>
+
+            <div class="stat-change">${data.resumen.rendimiento_promedio.toFixed(2)}% rendimiento</div>
+
+          </div>
+
+          <div class="stat-card">
+
+            <div class="stat-label">Inversión total</div>
+
+            <div class="stat-value">$${data.resumen.costo_total.toLocaleString()}</div>
+
+            <div class="stat-change">${data.resumen.total_clientes} clientes</div>
+
+          </div>
+
+        `;
+
+        html += '</div>';
+
+         
+
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">';
+
+         
+
+        // Top ganadores
+
+        html += '<div><h4>Top 10 posiciones ganadoras</h4><table style="width: 100%;"><thead><tr>';
+
+        html += '<th>Cliente</th><th>Acción</th><th>Rendimiento</th></tr></thead><tbody>';
+
+        data.top_ganadores.forEach(p => {
+
+          html += `<tr>
+
+            <td>${p.customer_nombre}</td>
+
+            <td>${p.simbolo}</td>
+
+            <td style="color: green;">${p.rendimiento.toFixed(2)}%</td>
+
+          </tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+        // Top perdedores
+
+        html += '<div><h4>Top 10 posiciones perdedoras</h4><table style="width: 100%;"><thead><tr>';
+
+        html += '<th>Cliente</th><th>Acción</th><th>Rendimiento</th></tr></thead><tbody>';
+
+        data.top_perdedores.reverse().forEach(p => {
+
+          html += `<tr>
+
+            <td>${p.customer_nombre}</td>
+
+            <td>${p.simbolo}</td>
+
+            <td style="color: red;">${p.rendimiento.toFixed(2)}%</td>
+
+          </tr>`;
+
+        });
+
+        html += '</tbody></table></div>';
+
+         
+
+        html += '</div>';
+
+      }
+
+       
+
+      container.innerHTML = html;
+
+    }
+
+
+
+    // Export data function
+
+    async function exportData(type) {
+
+      try {
+
+        let endpoint = '';
+
+        let filename = 'export.csv';
+
+         
+
+        // Determinar endpoint según el tipo
+
+        if (type === 'customers') {
+
+          endpoint = `${config.apiUrl}/export/customers`;
+
+          filename = 'clientes.csv';
+
+        } else if (type === 'transactions') {
+
+          endpoint = `${config.apiUrl}/export/transactions`;
+
+          filename = 'transacciones.csv';
+
+        } else if (type === 'current') {
+
+          // Detectar desde Reports
+
+          const reportType = document.getElementById('reportType')?.value;
+
+          if (reportType === 'clientes') {
+
+            endpoint = `${config.apiUrl}/export/customers`;
+
+            filename = 'clientes.csv';
+
+          } else if (reportType === 'transacciones') {
+
+            endpoint = `${config.apiUrl}/export/transactions`;
+
+            filename = 'transacciones.csv';
+
+          } else {
+
+            alert('Exportación no disponible para este reporte');
+
+            return;
+
+          }
+
+        } else {
+
+          alert('Tipo de exportación no válido');
+
+          return;
+
+        }
+
+         
+
+        console.log('Descargando desde:', endpoint);
+
+         
+
+        // Realizar solicitud
+
+        const response = await fetch(endpoint, {
+
+          method: 'GET',
+
+          headers: {
+
+            'X-API-Key': config.apiKey
+
+          }
+
+        });
+
+         
+
+        if (!response.ok) {
+
+          const errorText = await response.text();
+
+          console.error('Error response:', errorText);
+
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+
+        }
+
+         
+
+        // Obtener blob
+
+        const blob = await response.blob();
+
+         
+
+        // Crear enlace de descarga
+
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+
+        a.href = url;
+
+        a.download = filename;
+
+        a.style.display = 'none';
+
+        document.body.appendChild(a);
+
+        a.click();
+
+         
+
+        // Limpiar
+
+        setTimeout(() => {
+
+          window.URL.revokeObjectURL(url);
+
+          document.body.removeChild(a);
+
+        }, 100);
+
+         
+
+        console.log('Archivo descargado:', filename);
+
+      } catch (error) {
+
+        console.error('Error exporting:', error);
+
+        alert('Error al exportar: ' + error.message);
+
+      }
+
+    }
+
+
+
+    // Initialize
+
+    window.addEventListener('DOMContentLoaded', () => {
+
+      loadConfig();
+
+      refreshOverview();
+
+      loadStocks(); // Cargar acciones al iniciar
+
+      loadCustomersForSelect(); // Cargar clientes para el selector
+
+    });
+
+
+
+    // ========================================
+
+    // PORTFOLIO & STOCKS FUNCTIONS
+
+    // ========================================
+
+
+
+    let portfolioChart = null;
+
+    let portfolioUpdateInterval = null;
+
+
+
+    // Cargar clientes en el selector
+
+    async function loadCustomersForSelect() {
+
+      try {
+
+        const response = await fetch(`${config.apiUrl}/customers?per_page=100`, {
+
+          headers: { 'X-API-Key': config.apiKey }
+
+        });
+
+         
+
+        if (!response.ok) throw new Error('Error al cargar clientes');
+
+         
+
+        const data = await response.json();
+
+        const select = document.getElementById('customerSelect');
+
+         
+
+        data.data.forEach(customer => {
+
+          const option = document.createElement('option');
+
+          option.value = customer.id;
+
+          option.textContent = `${customer.nombre_completo} (${customer.email})`;
+
+          select.appendChild(option);
+
+        });
+
+      } catch (error) {
+
+        console.error('Error cargando clientes:', error);
+
+      }
+
+    }
+
+
+
+    // Cargar portfolio de cliente
+
+    async function loadCustomerPortfolio() {
+
+      const customerId = document.getElementById('customerSelect').value;
+
+       
+
+      if (!customerId) {
+
+        document.getElementById('portfolioEmptyState').style.display = 'block';
+
+        document.getElementById('portfolioSummary').style.display = 'none';
+
+        document.getElementById('portfolioChartContainer').style.display = 'none';
+
+        document.getElementById('portfolioTableContainer').style.display = 'none';
+
+        return;
+
+      }
+
+
+
+      try {
+
+        const response = await fetch(`${config.apiUrl}/portfolio/customer/${customerId}`, {
+
+          headers: { 'X-API-Key': config.apiKey }
+
+        });
+
+         
+
+        if (!response.ok) throw new Error('Error al cargar portfolio');
+
+         
+
+        const data = await response.json();
+
+         
+
+        // Ocultar empty state
+
+        document.getElementById('portfolioEmptyState').style.display = 'none';
+
+         
+
+        // Mostrar resumen
+
+        displayPortfolioSummary(data.resumen, data.customer);
+
+         
+
+        // Mostrar tabla de posiciones
+
+        displayPortfolioTable(data.portfolio);
+
+         
+
+        // Mostrar gráfico
+
+        displayPortfolioChart(data.portfolio);
+
+         
+
+        // Iniciar actualización automática
+
+        startPortfolioAutoUpdate();
+
+         
+
+      } catch (error) {
+
+        console.error('Error cargando portfolio:', error);
+
+        alert('Error al cargar el portfolio: ' + error.message);
+
+      }
+
+    }
+
+
+
+    // Mostrar resumen del portfolio
+
+    function displayPortfolioSummary(resumen, customer) {
+
+      document.getElementById('portfolioSummary').style.display = 'grid';
+
+       
+
+      document.getElementById('portfolioValue').textContent = formatCurrency(resumen.valor_actual);
+
+      document.getElementById('portfolioCost').textContent = formatCurrency(resumen.valor_compra);
+
+      document.getElementById('portfolioPositions').textContent = resumen.total_posiciones;
+
+       
+
+      const gainElement = document.getElementById('portfolioGain');
+
+      const gainPercentElement = document.getElementById('portfolioGainPercent');
+
+      const gain = resumen.ganancia_perdida;
+
+      const gainPercent = resumen.rendimiento_porcentaje;
+
+       
+
+      gainElement.textContent = formatCurrency(gain);
+
+      gainPercentElement.textContent = `${gainPercent.toFixed(2)}%`;
+
+       
+
+      gainElement.className = 'stat-value ' + (gain >= 0 ? 'positive' : 'negative');
+
+      gainPercentElement.className = 'stat-change ' + (gain >= 0 ? 'positive' : 'negative');
+
+    }
+
+
+
+    // Mostrar tabla de posiciones
+
+    function displayPortfolioTable(portfolio) {
+
+      document.getElementById('portfolioTableContainer').style.display = 'block';
+
+       
+
+      const tbody = document.querySelector('#portfolioTable tbody');
+
+      tbody.innerHTML = '';
+
+       
+
+      if (portfolio.length === 0) {
+
+        tbody.innerHTML = '<tr><td colspan="10" class="loading-row">No hay posiciones en el portfolio</td></tr>';
+
+        return;
+
+      }
+
+       
+
+      portfolio.forEach(position => {
+
+        const row = document.createElement('tr');
+
+        const gainLoss = position.ganancia_perdida;
+
+        const gainClass = gainLoss >= 0 ? 'positive' : 'negative';
+
+         
+
+        row.innerHTML = `
+
+          <td style="font-weight: 600;">${position.stock.simbolo}</td>
+
+          <td>${position.stock.nombre}</td>
+
+          <td>${position.cantidad}</td>
+
+          <td>${formatCurrency(position.precio_compra)}</td>
+
+          <td>${formatCurrency(position.stock.precio_actual)}</td>
+
+          <td>${formatCurrency(position.valor_actual)}</td>
+
+          <td class="${gainClass}">${formatCurrency(gainLoss)}</td>
+
+          <td class="${gainClass}">${position.rendimiento_porcentaje.toFixed(2)}%</td>
+
+          <td>${formatDate(position.fecha_compra)}</td>
+
+          <td>
+
+            <button class="action-btn sell" onclick="sellPosition(${position.id}, '${position.stock.simbolo}')">
+
+              Vender
+
+            </button>
+
+          </td>
+
+        `;
+
+        tbody.appendChild(row);
+
+      });
+
+    }
+
+
+
+    // Mostrar gráfico del portfolio
+
+    function displayPortfolioChart(portfolio) {
+
+      document.getElementById('portfolioChartContainer').style.display = 'block';
+
+       
+
+      const ctx = document.getElementById('portfolioChart').getContext('2d');
+
+       
+
+      // Destruir gráfico anterior si existe
+
+      if (portfolioChart) {
+
+        portfolioChart.destroy();
+
+      }
+
+       
+
+      // Preparar datos
+
+      const labels = portfolio.map(p => p.stock.simbolo);
+
+      const values = portfolio.map(p => p.valor_actual);
+
+      const backgroundColors = [
+
+        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+
+        '#00BCD4', '#8BC34A', '#FFC107', '#E91E63', '#3F51B5'
+
+      ];
+
+       
+
+      portfolioChart = new Chart(ctx, {
+
+        type: 'doughnut',
+
+        data: {
+
+          labels: labels,
+
+          datasets: [{
+
+            label: 'Valor',
+
+            data: values,
+
+            backgroundColor: backgroundColors.slice(0, portfolio.length),
+
+            borderWidth: 2,
+
+            borderColor: '#fff'
+
+          }]
+
+        },
+
+        options: {
+
+          responsive: true,
+
+          maintainAspectRatio: true,
+
+          plugins: {
+
+            legend: {
+
+              position: 'right',
+
+              labels: {
+
+                boxWidth: 15,
+
+                padding: 15,
+
+                font: { size: 12 }
+
+              }
+
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label: function(context) {
+
+                  const label = context.label || '';
+
+                  const value = context.parsed || 0;
+
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+
+                  const percentage = ((value / total) * 100).toFixed(1);
+
+                  return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+
+                }
+
+              }
+
+            }
+
+          }
+
+        }
+
+      });
+
+    }
+
+
+
+    // Cargar acciones disponibles
+
+    async function loadStocks() {
+
+      try {
+
+        const searchTerm = document.getElementById('stockSearch').value;
+
+        let url = `${config.apiUrl}/stocks?per_page=50`;
+
+         
+
+        const response = await fetch(url, {
+
+          headers: { 'X-API-Key': config.apiKey }
+
+        });
+
+         
+
+        if (!response.ok) throw new Error('Error al cargar acciones');
+
+         
+
+        const data = await response.json();
+
+        displayStocksTable(data.data);
+
+         
+
+      } catch (error) {
+
+        console.error('Error cargando acciones:', error);
+
+      }
+
+    }
+
+
+
+    // Mostrar tabla de acciones
+
+    function displayStocksTable(stocks) {
+
+      const tbody = document.querySelector('#stocksTable tbody');
+
+      tbody.innerHTML = '';
+
+       
+
+      if (stocks.length === 0) {
+
+        tbody.innerHTML = '<tr><td colspan="9" class="loading-row">No hay acciones disponibles</td></tr>';
+
+        return;
+
+      }
+
+       
+
+      // Filtrar por búsqueda
+
+      const searchTerm = document.getElementById('stockSearch').value.toLowerCase();
+
+      const filteredStocks = stocks.filter(stock => 
+
+        stock.simbolo.toLowerCase().includes(searchTerm) ||
+
+        stock.nombre.toLowerCase().includes(searchTerm)
+
+      );
+
+       
+
+      filteredStocks.forEach(stock => {
+
+        const row = document.createElement('tr');
+
+        const changeClass = stock.cambio_precio >= 0 ? 'price-up' : 'price-down';
+
+        const changeSymbol = stock.cambio_precio >= 0 ? '▲' : '▼';
+
+         
+
+        row.innerHTML = `
+
+          <td style="font-weight: 600;">${stock.simbolo}</td>
+
+          <td>${stock.nombre}</td>
+
+          <td>${stock.sector}</td>
+
+          <td>${formatCurrency(stock.precio_actual)}</td>
+
+          <td class="${changeClass}">${changeSymbol} ${formatCurrency(Math.abs(stock.cambio_precio))}</td>
+
+          <td class="${changeClass}">${stock.cambio_porcentaje.toFixed(2)}%</td>
+
+          <td>${formatNumber(stock.volumen)}</td>
+
+          <td>${stock.mercado}</td>
+
+          <td>
+
+            <button class="action-btn buy" onclick="buyStock('${stock.simbolo}', '${stock.nombre}', ${stock.precio_actual})">
+
+              Comprar
+
+            </button>
+
+          </td>
+
+        `;
+
+        tbody.appendChild(row);
+
+      });
+
+    }
+
+
+
+    // Iniciar actualización automática
+
+    function startPortfolioAutoUpdate() {
+
+      // Limpiar intervalo anterior
+
+      if (portfolioUpdateInterval) {
+
+        clearInterval(portfolioUpdateInterval);
+
+      }
+
+       
+
+      // Actualizar cada 30 segundos
+
+      portfolioUpdateInterval = setInterval(() => {
+
+        const customerId = document.getElementById('customerSelect').value;
+
+        if (customerId) {
+
+          loadCustomerPortfolio();
+
+        }
+
+      }, 30000);
+
+    }
+
+
+
+    // Comprar acción (mostrar modal)
+
+    function buyStock(simbolo, nombre, precio) {
+
+      const customerId = document.getElementById('customerSelect').value;
+
+       
+
+      if (!customerId) {
+
+        alert('Por favor, selecciona un cliente primero');
+
+        return;
+
+      }
+
+       
+
+      const cantidad = prompt(`¿Cuántas acciones de ${simbolo} deseas comprar?\nPrecio actual: ${formatCurrency(precio)}`);
+
+       
+
+      if (cantidad && parseInt(cantidad) > 0) {
+
+        executeBuyStock(customerId, simbolo, parseInt(cantidad), precio);
+
+      }
+
+    }
+
+
+
+    // Ejecutar compra
+
+    async function executeBuyStock(customerId, simbolo, cantidad, precio) {
+
+      try {
+
+        const response = await fetch(`${config.apiUrl}/portfolio`, {
+
+          method: 'POST',
+
+          headers: {
+
+            'X-API-Key': config.apiKey,
+
+            'Content-Type': 'application/json'
+
+          },
+
+          body: JSON.stringify({
+
+            customer_id: parseInt(customerId),
+
+            simbolo: simbolo,
+
+            cantidad: cantidad,
+
+            precio_compra: precio
+
+          })
+
+        });
+
+         
+
+        const data = await response.json();
+
+         
+
+        if (!response.ok) {
+
+          throw new Error(data.error || 'Error al comprar acción');
+
+        }
+
+         
+
+        alert(`✓ Compra exitosa: ${cantidad} acciones de ${simbolo} por ${formatCurrency(precio * cantidad)}`);
+
+        loadCustomerPortfolio(); // Recargar portfolio
+
+         
+
+      } catch (error) {
+
+        console.error('Error comprando acción:', error);
+
+        alert('Error al comprar acción: ' + error.message);
+
+      }
+
+    }
+
+
+
+    // Vender posición
+
+    async function sellPosition(positionId, simbolo) {
+
+      if (!confirm(`¿Estás seguro de vender toda la posición de ${simbolo}?`)) {
+
+        return;
+
+      }
+
+       
+
+      try {
+
+        const response = await fetch(`${config.apiUrl}/portfolio/${positionId}`, {
+
+          method: 'DELETE',
+
+          headers: { 'X-API-Key': config.apiKey }
+
+        });
+
+         
+
+        const data = await response.json();
+
+         
+
+        if (!response.ok) {
+
+          throw new Error(data.error || 'Error al vender posición');
+
+        }
+
+         
+
+        alert(`✓ Posición vendida exitosamente`);
+
+        loadCustomerPortfolio(); // Recargar portfolio
+
+         
+
+      } catch (error) {
+
+        console.error('Error vendiendo posición:', error);
+
+        alert('Error al vender posición: ' + error.message);
+
+      }
+
+    }
+
+
+
+    // Portfolio Analysis Functions
+
+    async function showPortfolioAnalysis() {
+
+      const customerId = document.getElementById('customerSelect').value;
+
+       
+
+      if (!customerId) {
+
+        alert('Por favor selecciona un cliente primero');
+
+        return;
+
+      }
+
+       
+
+      const panel = document.getElementById('portfolioAnalysisPanel');
+
+      const content = document.getElementById('analysisContent');
+
+       
+
+      panel.style.display = 'block';
+
+      content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Analizando portfolio...</p></div>';
+
+       
+
+      try {
+
+        const response = await apiCall(`/portfolio/analisis/${customerId}`);
+
+        const data = response.data;
+
+         
+
+        displayPortfolioAnalysis(data);
+
+         
+
+      } catch (error) {
+
+        console.error('Error loading analysis:', error);
+
+        content.innerHTML = '<div class="empty-state"><p>Error al cargar análisis: ' + error.message + '</p></div>';
+
+      }
+
+    }
+
+
+
+    function hidePortfolioAnalysis() {
+
+      document.getElementById('portfolioAnalysisPanel').style.display = 'none';
+
+    }
+
+
+
+    function displayPortfolioAnalysis(data) {
+
+      const content = document.getElementById('analysisContent');
+
+       
+
+      let html = '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">';
+
+       
+
+      // Diversificación
+
+      html += '<div style="padding: 1rem; background: var(--background); border-radius: 6px; border: 1px solid var(--border);">';
+
+      html += '<h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">Diversificación</h4>';
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Sectores:</strong> ${data.diversificacion.num_sectores}</p>`;
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Concentración Top 3:</strong> ${data.diversificacion.concentracion_top3}%</p>`;
+
+       
+
+      if (Object.keys(data.diversificacion.sectores).length > 0) {
+
+        html += '<div style="margin-top: 1rem; font-size: 0.9rem;">';
+
+        for (const [sector, valor] of Object.entries(data.diversificacion.sectores)) {
+
+          html += `<div style="margin: 0.3rem 0;">${sector}: $${valor.toFixed(0)}</div>`;
+
+        }
+
+        html += '</div>';
+
+      }
+
+      html += '</div>';
+
+       
+
+      // Riesgo
+
+      html += '<div style="padding: 1rem; background: var(--background); border-radius: 6px; border: 1px solid var(--border);">';
+
+      html += '<h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">Análisis de riesgo</h4>';
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Nivel:</strong> ${data.riesgo.nivel}</p>`;
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Volatilidad:</strong> ${data.riesgo.volatilidad_promedio}%</p>`;
+
+       
+
+      let riesgoColor = 'green';
+
+      if (data.riesgo.nivel === 'Alto') riesgoColor = 'red';
+
+      else if (data.riesgo.nivel === 'Medio') riesgoColor = 'orange';
+
+       
+
+      html += `<div style="margin-top: 1rem; padding: 0.75rem; background: ${riesgoColor}22; border-left: 3px solid ${riesgoColor}; border-radius: 4px;">`;
+
+      html += `<strong style="color: ${riesgoColor};">${data.riesgo.nivel === 'Alto' ? 'Alto riesgo' : (data.riesgo.nivel === 'Medio' ? 'Riesgo moderado' : 'Bajo riesgo')}</strong>`;
+
+      html += '</div>';
+
+      html += '</div>';
+
+       
+
+      // Rendimiento
+
+      html += '<div style="padding: 1rem; background: var(--background); border-radius: 6px; border: 1px solid var(--border);">';
+
+      html += '<h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">Rendimiento</h4>';
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Valor actual:</strong> $${data.rendimiento.valor_total.toLocaleString()}</p>`;
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Inversión:</strong> $${data.rendimiento.costo_total.toLocaleString()}</p>`;
+
+       
+
+      const gananciaColor = data.rendimiento.ganancia_total >= 0 ? 'green' : 'red';
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Ganancia:</strong> <span style="color: ${gananciaColor};">$${data.rendimiento.ganancia_total.toLocaleString()}</span></p>`;
+
+      html += `<p style="margin: 0.5rem 0;"><strong>Rendimiento:</strong> <span style="color: ${gananciaColor};">${data.rendimiento.rendimiento_porcentaje.toFixed(2)}%</span></p>`;
+
+      html += '</div>';
+
+       
+
+      html += '</div>';
+
+       
+
+      // Recomendaciones
+
+      html += '<div style="padding: 1.5rem; background: var(--background); border-radius: 6px; border: 1px solid var(--border);">';
+
+      html += '<h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">Recomendaciones</h4>';
+
+      html += '<ul style="margin: 0; padding-left: 1.5rem; line-height: 1.8;">';
+
+      data.recomendaciones.forEach(rec => {
+
+        html += `<li>${rec}</li>`;
+
+      });
+
+      html += '</ul>';
+
+      html += '</div>';
+
+       
+
+      content.innerHTML = html;
+
+    }
+
+
+
+    // Formato de números
+
+    function formatNumber(num) {
+
+      return new Intl.NumberFormat('es-ES').format(num);
+
+    }
+
+
+
+    function formatCurrency(amount) {
+
+      return new Intl.NumberFormat('es-ES', {
+
+        style: 'currency',
+
+        currency: 'USD'
+
+      }).format(amount);
+
+    }
+
+
+
+    function formatDate(dateString) {
+
+      return new Date(dateString).toLocaleDateString('es-ES', {
+
+        year: 'numeric',
+
+        month: 'short',
+
+        day: 'numeric'
+
+      });
+
+    }
+
+  </script>
+
+</body>
+
+</html>
