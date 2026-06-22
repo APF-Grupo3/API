@@ -1,4 +1,0 @@
-version de py = 
-vesion de flask = 
-requisitos = 
-yfinance = ...
