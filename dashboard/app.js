@@ -247,6 +247,35 @@ function buildBarChart(canvasId, label, labels, values, colors) {
   });
 }
 
+// Funciones para determinar el color de las métricas adicionales
+function colorForCagr(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return COLOR_NEUTRAL;
+  return COLOR_POSITIVE;   // Siempre verde
+}
+
+function colorForDrawdown(value) {
+  // Esta se queda EXACTAMENTE igual, manteniendo la lógica de riesgo
+  if (value === null || value === undefined || Number.isNaN(value)) return COLOR_NEUTRAL;
+  if (value > -0.1) return COLOR_POSITIVE;   // caída menor al 10% (verde)
+  if (value > -0.2) return COLOR_WARNING;    // entre -10% y -20% (amarillo/naranja)
+  return COLOR_NEGATIVE;                     // peor que -20% (rojo)
+}
+
+function colorForSortino(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return COLOR_NEUTRAL;
+  return COLOR_POSITIVE;   // Siempre verde
+}
+
+function colorForVolatility(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return COLOR_NEUTRAL;
+  return COLOR_POSITIVE;   // Siempre verde
+}
+
+function colorForRsi(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return COLOR_NEUTRAL;
+  return COLOR_POSITIVE;   // Siempre verde
+}
+
 function renderCharts(funds) {
   const validFunds = funds.filter((fund) => !fund.error);
   const labels = validFunds.map((fund) => fund.ticker);
@@ -262,11 +291,11 @@ function renderCharts(funds) {
 
   state.returnsChart = buildBarChart(
     "returnsChart",
-    "Rentabilidad acumulada",
+    "Rentabilidad acumulada (%)",
     labels,
-    validFunds.map((fund) => fund.rentabilidad_acumulada * 100),
+    validFunds.map((fund) => (fund.rentabilidad_acumulada ?? 0) * 100),
     validFunds.map((fund) =>
-      fund.rentabilidad_acumulada >= 0 ? "rgba(57, 201, 128, 0.8)" : "rgba(255, 107, 107, 0.8)"
+      (fund.rentabilidad_acumulada ?? 0) >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE
     )
   );
 
@@ -276,14 +305,51 @@ function renderCharts(funds) {
     labels,
     validFunds.map((fund) => fund.sharpe_ratio ?? 0),
     validFunds.map((fund) => {
-            if ((fund.sharpe_ratio ?? -1) > 1) {
-        return "rgba(57, 201, 128, 0.8)";
-      }
-      if ((fund.sharpe_ratio ?? -1) >= 0) {
-        return "rgba(244, 195, 93, 0.8)";
-      }
-      return "rgba(255, 107, 107, 0.8)";
+      // Mantener la misma lógica de colores que en la tabla
+      if ((fund.sharpe_ratio ?? -1) > 1) return COLOR_POSITIVE;
+      if ((fund.sharpe_ratio ?? -1) >= 0) return COLOR_WARNING;
+      return COLOR_NEGATIVE;
     })
+  );
+
+  state.cagrChart = buildBarChart(
+    "cagrChart",
+    "CAGR (%)",
+    labels,
+    validFunds.map((fund) => (fund.cagr ?? 0) * 100),
+    validFunds.map((fund) => colorForCagr(fund.cagr))
+  );
+
+  state.maxDrawdownChart = buildBarChart(
+    "maxDrawdownChart",
+    "Max Drawdown (%)",
+    labels,
+    validFunds.map((fund) => (fund.max_drawdown ?? 0) * 100),
+    validFunds.map((fund) => colorForDrawdown(fund.max_drawdown))
+  );
+
+  state.sortinoChart = buildBarChart(
+    "sortinoChart",
+    "Sortino Ratio",
+    labels,
+    validFunds.map((fund) => fund.sortino_ratio ?? 0),
+    validFunds.map((fund) => colorForSortino(fund.sortino_ratio))
+  );
+
+  state.volatilityChart = buildBarChart(
+    "volatilityChart",
+    "Volatilidad anual (%)",
+    labels,
+    validFunds.map((fund) => (fund.volatilidad_anual ?? 0) * 100),
+    validFunds.map((fund) => colorForVolatility(fund.volatilidad_anual))
+  );
+
+  state.rsiChart = buildBarChart(
+    "rsiChart",
+    "RSI (14)",
+    labels,
+    validFunds.map((fund) => fund.rsi_14 ?? 0),
+    validFunds.map((fund) => colorForRsi(fund.rsi_14))
   );
 }
 
