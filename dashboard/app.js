@@ -1,8 +1,19 @@
 const state = {
   returnsChart: null,
   sharpeChart: null,
+  cagrChart: null,
+  maxDrawdownChart: null,
+  sortinoChart: null,
+  volatilityChart: null,
+  rsiChart: null,
   cliente: null, // usuario logueado (de sessionStorage)
 };
+
+// Paleta común para semáforos de métricas
+const COLOR_POSITIVE = "rgba(57, 201, 128, 0.8)";
+const COLOR_WARNING = "rgba(244, 195, 93, 0.8)";
+const COLOR_NEGATIVE = "rgba(255, 107, 107, 0.8)";
+const COLOR_NEUTRAL = "rgba(47, 128, 237, 0.8)";
 
 // ── Sesión ──
 function getSession() {
@@ -242,6 +253,12 @@ function renderCharts(funds) {
 
   destroyChart(state.returnsChart);
   destroyChart(state.sharpeChart);
+  // Añadir las destrucciones de los otros gráficos si existen
+  destroyChart(state.cagrChart);
+  destroyChart(state.maxDrawdownChart);
+  destroyChart(state.sortinoChart);
+  destroyChart(state.volatilityChart);
+  destroyChart(state.rsiChart);
 
   state.returnsChart = buildBarChart(
     "returnsChart",
@@ -259,7 +276,7 @@ function renderCharts(funds) {
     labels,
     validFunds.map((fund) => fund.sharpe_ratio ?? 0),
     validFunds.map((fund) => {
-      if ((fund.sharpe_ratio ?? -1) > 1) {
+            if ((fund.sharpe_ratio ?? -1) > 1) {
         return "rgba(57, 201, 128, 0.8)";
       }
       if ((fund.sharpe_ratio ?? -1) >= 0) {
@@ -318,6 +335,12 @@ async function loadComparison() {
   } catch (error) {
     destroyChart(state.returnsChart);
     destroyChart(state.sharpeChart);
+    // Añadir destrucción de los otros gráficos si existen
+    destroyChart(state.cagrChart);
+    destroyChart(state.maxDrawdownChart);
+    destroyChart(state.sortinoChart);
+    destroyChart(state.volatilityChart);
+    destroyChart(state.rsiChart);
     renderComparisonTable([]);
     renderRanking(elements.rankingSharpe, [], formatNumber);
     renderRanking(elements.rankingReturn, [], formatPercent);
